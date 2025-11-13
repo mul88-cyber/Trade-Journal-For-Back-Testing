@@ -1,228 +1,156 @@
 import streamlit as st
+import gspread
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import requests
-import os
+from google.oauth2.service_account import Credentials
+from datetime import datetime
 
-# Page config
-st.set_page_config(
-    page_title="Trading Journal Pro",
-    page_icon="📈",
-    layout="wide"
-)
+# -----------------------------------------------------------------
+# KONEKSI KE GOOGLE SHEETS
+# -----------------------------------------------------------------
 
-# CSV Setup
-CSV_FILE = "trading_journal.csv"
+# Kita 'scope' (lingkup) izin yang kita butuhkan
+SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+]
 
-def load_data():
-    """Load data from CSV"""
-    try:
-        if os.path.exists(CSV_FILE):
-            df = pd.read_csv(CSV_FILE)
-            # Convert timestamp
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            return df
-        else:
-            # Create empty CSV with correct columns
-            empty_df = pd.DataFrame(columns=[
-                'timestamp', 'pair', 'direction', 'entry_price', 'stop_loss',
-                'take_profit', 'exit_price', 'position_size', 'pnl', 'pnl_percent',
-                'risk_reward_ratio', 'leverage', 'setup_quality', 'emotion_pre_trade',
-                'emotion_post_trade', 'lesson_learned', 'strategy', 'timeframe', 'tags'
-            ])
-            empty_df.to_csv(CSV_FILE, index=False)
-            return empty_df
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame()
+# Fungsi untuk autentikasi dan konek ke GSheet
+# Streamlit akan 'inject' secrets dari st.secrets
+def get_gsheet_client():
+    creds_dict = st.secrets["gcp_service_account"]
+    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    client = gspread.authorize(creds)
+    return client
 
-def save_data(df):
-    """Save data to CSV"""
-    try:
-        df.to_csv(CSV_FILE, index=False)
-        return True
-    except Exception as e:
-        st.error(f"Error saving data: {e}")
-        return False
+# Fungsi untuk membuka worksheet spesifik
+def open_worksheet(client):
+    # Buka GSheet berdasarkan NAMA FILE
+    spreadsheet = client.open("Trade Journal") 
+    # Buka sheet pertama (worksheet)
+    worksheet = spreadsheet.sheet1 
+    return worksheet
 
-def get_current_price(symbol):
-    """Get current price from Bybit API"""
-    try:
-        url = f"https://api.bybit.com/v2/public/tickers?symbol={symbol}"
-        response = requests.get(url, timeout=5)
-        data = response.json()
-        if data['ret_code'] == 0:
-            return float(data['result'][0]['last_price'])
-    except:
-        return None
+# -----------------------------------------------------------------
+# APLIKASI STREAMLIT
+# -----------------------------------------------------------------
 
-def calculate_pnl(row, current_prices):
-    """Calculate real-time PnL"""
-    if pd.isna(row['exit_price']):
-        current_price = current_prices.get(row['pair'])
-        if current_price:
-            if row['direction'] == 'LONG':
-                pnl = (current_price - row['entry_price']) * row['position_size']
-            else:  # SHORT
-                pnl = (row['entry_price'] - current_price) * row['position_size']
-            return pnl
-    return row['pnl']
+st.set_page_config(page_title="Kokpit Trader Pro", layout="wide")
+st.title("🚀 Kokpit Trader Pro Anda")
+st.markdown("Dibangun untuk *workflow* trading yang disiplin.")
 
-# Main App
-st.title("📈 Trading Journal Pro")
-st.markdown("---")
+try:
+    # Coba konek ke GSheet
+    client = get_gsheet_client()
+    worksheet = open_worksheet(client)
+    st.success("Berhasil terkoneksi ke Google Sheet 'Trade Journal' Anda!")
 
-# Load data
-df = load_data()
+    # Buat TABS untuk navigasi
+    tab_input, tab_dashboard = st.tabs(["✍️ Input Trade", "📊 Dashboard"])
 
-# Sidebar - New Trade Entry
-st.sidebar.header("➕ New Trade Entry")
-
-with st.sidebar.form("trade_entry"):
-    timestamp = st.date_input("Trade Date", datetime.now())
-    pair = st.selectbox("Pair", ["BTCUSDT", "ETHUSDT", "ADAUSDT", "SOLUSDT", "XRPUSDT"])
-    direction = st.radio("Direction", ["LONG", "SHORT"])
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        entry_price = st.number_input("Entry Price", min_value=0.0, format="%.4f")
-        position_size = st.number_input("Position Size (USDT)", min_value=0.0)
-        leverage = st.number_input("Leverage", min_value=1, value=3)
-    with col2:
-        stop_loss = st.number_input("Stop Loss", min_value=0.0, format="%.4f")
-        take_profit = st.number_input("Take Profit", min_value=0.0, format="%.4f")
-    
-    emotion_pre = st.selectbox("Pre-Trade Emotion", ["Confident", "Calm", "Anxious", "Greedy", "Fearful"])
-    setup_quality = st.selectbox("Setup Quality", ["A", "B", "C"])
-    
-    notes = st.text_area("Trade Notes / Setup Description")
-    
-    if st.form_submit_button("💾 Save Trade"):
-        new_trade = {
-            'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'pair': pair,
-            'direction': direction,
-            'entry_price': entry_price,
-            'stop_loss': stop_loss,
-            'take_profit': take_profit,
-            'position_size': position_size,
-            'leverage': leverage,
-            'setup_quality': setup_quality,
-            'emotion_pre_trade': emotion_pre,
-            'lesson_learned': notes,
-            'exit_price': '',
-            'pnl': '',
-            'pnl_percent': '',
-            'risk_reward_ratio': abs(take_profit - entry_price) / abs(entry_price - stop_loss) if stop_loss else 0,
-            'emotion_post_trade': '',
-            'strategy': '',
-            'timeframe': '',
-            'tags': ''
-        }
+    # ----------------------------------------------------
+    # TAB 1: INPUT TRADE
+    # ----------------------------------------------------
+    with tab_input:
+        st.header("Catat Trade Baru")
         
-        # Add to DataFrame and save
-        new_df = pd.concat([df, pd.DataFrame([new_trade])], ignore_index=True)
-        if save_data(new_df):
-            st.sidebar.success("Trade saved successfully! 🎯")
-            st.rerun()
-        else:
-            st.sidebar.error("Error saving trade!")
-
-# Real-time PnL Calculation
-if not df.empty:
-    # Get current prices for PnL calculation
-    current_prices = {}
-    unique_pairs = df['pair'].unique()
-    for pair in unique_pairs:
-        current_prices[pair] = get_current_price(pair)
-    
-    # Calculate real-time PnL
-    df['current_pnl'] = df.apply(calculate_pnl, axis=1, args=(current_prices,))
-
-# Main Dashboard
-if not df.empty:
-    # Real-time PnL Overview
-    st.header("📊 Live Portfolio Overview")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    total_trades = len(df)
-    winning_trades = len(df[df['pnl'] > 0]) if 'pnl' in df.columns else 0
-    win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
-    
-    # Calculate real-time metrics
-    closed_trades = df[df['exit_price'].notna()]
-    open_trades = df[df['exit_price'].isna()]
-    
-    total_pnl = closed_trades['pnl'].sum() if 'pnl' in closed_trades.columns else 0
-    open_pnl = open_trades['current_pnl'].sum() if 'current_pnl' in open_trades.columns else 0
-    
-    with col1:
-        st.metric("Total Trades", total_trades)
-    with col2:
-        st.metric("Win Rate", f"{win_rate:.1f}%")
-    with col3:
-        st.metric("Closed PnL", f"${total_pnl:+.2f}")
-    with col4:
-        st.metric("Open PnL", f"${open_pnl:+.2f}", delta=f"{open_pnl:+.2f}")
-
-    # Charts
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # PnL Over Time
-        st.subheader("Equity Curve")
-        if not closed_trades.empty:
-            closed_trades_sorted = closed_trades.sort_values('timestamp')
-            closed_trades_sorted['cumulative_pnl'] = closed_trades_sorted['pnl'].cumsum()
+        # Gunakan st.form untuk 'batch' input
+        with st.form(key="trade_form", clear_on_submit=True):
             
-            fig = px.line(closed_trades_sorted, x='timestamp', y='cumulative_pnl',
-                         title="Cumulative PnL Over Time")
-            st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        # Setup Quality Analysis
-        st.subheader("Setup Quality Performance")
-        if 'setup_quality' in df.columns and 'pnl' in df.columns:
-            quality_pnl = df.groupby('setup_quality')['pnl'].mean()
-            fig = px.bar(x=quality_pnl.index, y=quality_pnl.values,
-                        title="Average PnL by Setup Quality")
-            st.plotly_chart(fig, use_container_width=True)
+            # Kita pakai kolom biar rapi
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.subheader("Data Setup")
+                pairs = st.text_input("Pairs (e.g., BTC/USDT)")
+                direction = st.selectbox("Direction", ["LONG", "SHORT"])
+                timeframe = st.selectbox("Timeframe", ["1m", "5m", "15m", "30m", "1H", "4H", "1D"])
+                strategy = st.text_input("Strategy (e.g., Break & Retest)")
+                tags = st.text_input("Tags (pisah dgn koma, e.g., FOMC, News, High-RR)")
+            
+            with col2:
+                st.subheader("Data Eksekusi")
+                entry_price = st.number_input("Entry Price", format="%.8f")
+                stop_loss = st.number_input("Stop Loss", format="%.8f")
+                take_profit = st.number_input("Take Profit", format="%.8f")
+                leverage = st.number_input("Leverage (x)", min_value=1, step=1, value=20)
+                position_size = st.number_input("Position Size (USDT)")
 
-    # Trade History
-    st.header("📋 Trade History")
-    
-    # Show open trades first
-    if not open_trades.empty:
-        st.subheader("🟡 Open Trades")
-        open_display = open_trades[['timestamp', 'pair', 'direction', 'entry_price', 
-                                  'stop_loss', 'take_profit', 'position_size', 'current_pnl']]
-        open_display['current_pnl'] = open_display['current_pnl'].round(2)
-        st.dataframe(open_display, use_container_width=True)
-    
-    # Show closed trades
-    if not closed_trades.empty:
-        st.subheader("🟢 Closed Trades")
-        closed_display = closed_trades[['timestamp', 'pair', 'direction', 'entry_price',
-                                      'exit_price', 'position_size', 'pnl', 'pnl_percent']]
-        st.dataframe(closed_display, use_container_width=True)
+            with col3:
+                st.subheader("Data Hasil & Psikologis")
+                exit_price = st.number_input("Exit Price (isi jika sudah close)", format="%.8f", value=0.0)
+                pnl_usdt = st.number_input("PNL (USDT) (isi jika sudah close)", value=0.0)
+                setup_quality = st.selectbox("Kualitas Setup", ["A (High-Prob)", "B (Good-Prob)", "C (Low-Prob)"])
+                emotion_pre = st.selectbox("Emosi Pre-Trade", ["Confident", "Anxious", "Calm", "FOMO", "Bored"])
+                emotion_post = st.selectbox("Emosi Post-Trade", ["Happy", "Regret", "Angry", "Calm", "Neutral"])
 
-else:
-    st.info("No trades recorded yet. Start by adding your first trade in the sidebar! 🚀")
+            st.subheader("Review & Pembelajaran")
+            learning = st.text_area("Learning (Apa yang terjadi?)")
+            lesson_learned = st.text_area("Lesson Learned (Apa yang harus dilakukan/dihindari?)")
 
-# Data Management
-st.sidebar.header("💾 Data Management")
-if st.sidebar.button("Download CSV Backup"):
-    if not df.empty:
-        st.sidebar.download_button(
-            label="Download CSV",
-            data=df.to_csv(index=False),
-            file_name=f"trading_journal_backup_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv"
-        )
+            # Tombol Submit
+            submit_button = st.form_submit_button(label="Simpan Trade ke Jurnal")
 
-# Footer
-st.markdown("---")
-st.markdown("**Trading Journal Pro** - Built for disciplined traders 🎯")
+            # Aksi saat tombol submit ditekan
+            if submit_button:
+                with st.spinner("Menyimpan data..."):
+                    
+                    # 1. Generate data yang tidak di-input manual
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    # 2. Hitung PNL(%) dan R/R Ratio (basic)
+                    # Ini bisa Anda kembangkan jadi lebih canggih
+                    pnl_percent = (pnl_usdt / position_size) * 100 if position_size > 0 else 0
+                    
+                    risk = abs(entry_price - stop_loss)
+                    reward = abs(take_profit - entry_price)
+                    rr_ratio = reward / risk if risk > 0 else 0
+                    
+                    # 3. Susun data SESUAI URUTAN HEADER GSheet Anda (A-S)
+                    new_row = [
+                        timestamp,
+                        pairs,
+                        direction,
+                        entry_price,
+                        stop_loss,
+                        take_profit,
+                        exit_price,
+                        position_size,
+                        pnl_usdt,
+                        f"{pnl_percent:.2f}%",  # PNL (%)
+                        f"1:{rr_ratio:.2f}",    # R/R_ratio
+                        leverage,
+                        setup_quality,
+                        emotion_pre,
+                        emotion_post,
+                        learning,
+                        lesson_learned,
+                        timeframe,
+                        strategy,
+                        tags
+                    ]
+                    
+                    # 4. Kirim ke Google Sheet
+                    worksheet.append_row(new_row)
+                    
+                    st.success(f"Trade {pairs} ({direction}) berhasil dicatat! Terus disiplin, bro.")
+
+
+    # ----------------------------------------------------
+    # TAB 2: DASHBOARD
+    # ----------------------------------------------------
+    with tab_dashboard:
+        st.header("Dashboard Performa Trading")
+        st.markdown("Ini adalah 'Kotak Hitam' Anda. Review setiap akhir pekan.")
+        
+        with st.spinner("Memuat data dari GSheet..."):
+            # Ambil SEMUA data dari GSheet
+            data = worksheet.get_all_records()
+            
+            if not data:
+                st.warning("Data jurnal masih kosong. Silakan input trade pertama Anda!")
+            else:
+                # Konversi ke Pandas DataFrame
+                df = pd.DataFrame(data)
+                
+                st.subheader("Semua Catatan Trade")
+                st.dataframe(df.tail(20)) # Tampilkan 20
