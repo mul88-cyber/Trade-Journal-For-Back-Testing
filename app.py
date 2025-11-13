@@ -153,4 +153,43 @@ try:
                 df = pd.DataFrame(data)
                 
                 st.subheader("Semua Catatan Trade")
-                st.dataframe(df.tail(20)) # Tampilkan 20
+                st.dataframe(df.tail(20)) # Tampilkan 20 trade terakhir
+                
+                st.divider()
+                
+                # --- Mulai Analisis Canggih (Ini baru permulaan) ---
+                st.subheader("Analisis Cepat Performa")
+                
+                # Pastikan PNL adalah angka (float)
+                df["PNL_(USDT)"] = pd.to_numeric(df["PNL_(USDT)"], errors='coerce').fillna(0)
+                
+                total_pnl = df["PNL_(USDT)"].sum()
+                total_trades = len(df)
+                
+                # Hitung Win/Loss
+                wins = df[df["PNL_(USDT)"] > 0]
+                losses = df[df["PNL_(USDT)"] < 0]
+                breakeven = df[df["PNL_(USDT)"] == 0]
+                
+                win_rate = (len(wins) / total_trades) * 100 if total_trades > 0 else 0
+                
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Total PNL (USDT)", f"${total_pnl:,.2f}")
+                col2.metric("Total Trades", total_trades)
+                col3.metric("Win Rate", f"{win_rate:.2f}%")
+                
+                # Chart Equity Curve (Kumulatif PNL)
+                st.subheader("Equity Curve (Kumulatif PNL)")
+                df['Cumulative PNL'] = df["PNL_(USDT)"].cumsum()
+                st.line_chart(df, y='Cumulative PNL', x='Timestamp')
+                
+                # Analisis Psikologis (Contoh)
+                st.subheader("Analisis Emosi Pre-Trade")
+                pnl_by_emotion = df.groupby("Emotion_pre_trade_Confident/Anxious/Calm")["PNL_(USDT)"].sum()
+                st.bar_chart(pnl_by_emotion)
+                st.markdown("`Insight:` Cek emosi mana yang paling sering menghasilkan *loss*.")
+
+
+except Exception as e:
+    st.error(f"Koneksi Gagal. Cek 3 hal: (1) API sudah 'Enabled'?, (2) Email Bot sudah 'Share' & 'Editor' di GSheet?, (3) 'secrets.toml' sudah benar?")
+    st.error(f"Error detail: {e}")
