@@ -1,26 +1,29 @@
 import streamlit as st
 import gspread
 import pandas as pd
-from google.oauth2.service_account import Credentials
+# from google.oauth2.service_account import Credentials <-- TIDAK DIPAKAI LAGI
 from datetime import datetime
 import numpy as np 
 import pytz 
 
 # -----------------------------------------------------------------
-# KONEKSI KE GOOGLE SHEETS
+# KONEKSI KE GOOGLE SHEETS (v2.4 - METODE BARU)
 # -----------------------------------------------------------------
 
 # Kita 'scope' (lingkup) izin yang kita butuhkan
 SCOPES = [
-    'https.www.googleapis.com/auth/spreadsheets',
-    'https.www.googleapis.com/auth/drive'
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
 ]
 
 # Fungsi untuk autentikasi dan konek ke GSheet
+# !!! INI BAGIAN YANG DIUBAH (v2.4) !!!
 def get_gsheet_client():
     creds_dict = st.secrets["gcp_service_account"]
-    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-    client = gspread.authorize(creds)
+    
+    # Kita pakai metode .service_account_from_dict
+    # Ini lebih modern dan langsung
+    client = gspread.service_account_from_dict(creds_dict, scopes=SCOPES)
     return client
 
 # Fungsi untuk membuka worksheet spesifik
@@ -33,6 +36,7 @@ def open_worksheet(client):
         st.error("GSheet 'Trade Journal' tidak ditemukan. Pastikan nama file sudah benar dan email bot sudah di-share.")
         return None
     except Exception as e:
+        # Tampilkan error asli untuk debug
         st.error(f"Error saat membuka GSheet: {e}")
         return None
 
@@ -40,8 +44,8 @@ def open_worksheet(client):
 # APLIKASI STREAMLIT
 # -----------------------------------------------------------------
 
-st.set_page_config(page_title="Kokpit Trader Pro v2.3", layout="wide")
-st.title("🚀 Kokpit Trader Pro v2.3 (Urutan Kolom Disesuaikan)")
+st.set_page_config(page_title="Kokpit Trader Pro v2.4", layout="wide")
+st.title("🚀 Kokpit Trader Pro v2.4 (Auth Fix)")
 st.markdown("Dibangun untuk *workflow* trading yang disiplin.")
 
 try:
@@ -59,7 +63,7 @@ try:
         tab_input, tab_dashboard = st.tabs(["✍️ Input Trade", "📊 Dashboard"])
 
         # ----------------------------------------------------
-        # TAB 1: INPUT TRADE (TIDAK ADA PERUBAHAN FORM)
+        # TAB 1: INPUT TRADE (TIDAK ADA PERUBAHAN)
         # ----------------------------------------------------
         with tab_input:
             st.header("Catat Trade Baru")
@@ -119,28 +123,12 @@ try:
                             reward_per_koin = abs(take_profit - entry_price)
                             rr_ratio = np.divide(reward_per_koin, risk_per_koin)
 
-                            # --- UPDATE ROW (v2.3) ---
-                            # Urutan list ini sekarang SAMA PERSIS
-                            # dengan urutan kolom di GSheet Anda (berdasarkan gambar)
                             new_row = [
-                                timestamp,
-                                pairs,
-                                direction,
-                                entry_price,
-                                stop_loss,
-                                take_profit,
-                                exit_price,
-                                position_size,
-                                round(pnl_usdt, 4),    # PNL_(USDT)
-                                f"{pnl_percent:.2f}%", # PNL_(%)
-                                f"1:{rr_ratio:.2f}",   # R/R_ratio
-                                leverage,
-                                timeframe,             # <- Dipindahkan ke sini
-                                strategy,              # <- Dipindahkan ke sini
-                                setup_quality,         # <- Mundur
-                                emotion_pre,           # <- Mundur
-                                emotion_post,          # <- Mundur
-                                lesson_learned         # <- Mundur
+                                timestamp, pairs, direction, entry_price, stop_loss,
+                                take_profit, exit_price, position_size, round(pnl_usdt, 4),
+                                f"{pnl_percent:.2f}%", f"1:{rr_ratio:.2f}", leverage,
+                                timeframe, strategy, setup_quality, emotion_pre,
+                                emotion_post, lesson_learned
                             ]
                             
                             worksheet.append_row(new_row)
@@ -226,7 +214,7 @@ except Exception as e:
     elif "SpreadsheetNotFound" in str(e):
         st.error("Error: GSheet 'Trade Journal' tidak ditemukan. Cek nama file dan pastikan email bot sudah di-share.")
     elif "Mismatched" in str(e) or "column count" in str(e):
-         st.error("Error: Jumlah kolom GSheet (sekarang 18) tidak cocok dengan kode. Pastikan urutan di GSheet SAMA PERSIS dengan di `new_row` (v2.3).")
+         st.error("Error: Jumlah kolom GSheet (18) tidak cocok dengan kode. Pastikan urutan di GSheet SAMA PERSIS dengan di `new_row`.")
     else:
         st.error(f"Terjadi Error. Cek koneksi atau detail GSheet Anda.")
         st.error(f"Error detail: {e}")
