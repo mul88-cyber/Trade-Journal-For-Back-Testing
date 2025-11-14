@@ -2,7 +2,7 @@ import streamlit as st
 import gspread
 import pandas as pd
 from datetime import datetime
-import numpy as np 
+import numpy as np
 import pytz
 from google.oauth2.service_account import Credentials
 
@@ -15,15 +15,25 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive"
 ]
 
+COLUMN_NAMES = [
+    "Timestamp", "Pairs", "Direction", "Entry Price", "Stop Loss", 
+    "Take Profit", "Exit Price", "Position Size", "PNL (USDT)", "PNL (%)", 
+    "RRR", "Leverage", "Timeframe", "Strategy", "Setup Quality", 
+    "Emotion Pre-Trade", "Emotion Post-Trade", "Lesson Learned", "Chart URL"
+]
+
+
+@st.cache_resource(ttl=300)
 def get_gsheet_client():
     creds_dict = st.secrets["gcp_service_account"]
     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     client = gspread.authorize(creds)
     return client
 
-def open_worksheet(client):
+@st.cache_data(ttl=60)
+def open_worksheet(_client):
     try:
-        spreadsheet = client.open("Trade Journal")
+        spreadsheet = _client.open("Trade Journal")
         worksheet = spreadsheet.sheet1
         return worksheet
     except gspread.exceptions.SpreadsheetNotFound:
@@ -33,23 +43,75 @@ def open_worksheet(client):
         st.error(f"Error saat membuka GSheet: {e}")
         return None
 
+@st.cache_data(ttl=60)
+def get_data_as_dataframe(worksheet):
+    try:
+        data = worksheet.get_all_values()
+        
+        if len(data) <= 1:
+            return pd.DataFrame(columns=COLUMN_NAMES)
+
+        df = pd.DataFrame(data[1:], columns=COLUMN_NAMES)
+        
+        numeric_cols = ["Entry Price", "Stop Loss", "Take Profit", "Exit Price", 
+                        "Position Size", "PNL (USDT)", "Leverage"]
+        for col in numeric_cols:
+            df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+            
+        df["Timestamp"] = pd.to_datetime(df["Timestamp"], format="%Y-%m-%d %H:%M:%S", errors='coerce')
+        df = df.dropna(subset=['Timestamp'])
+        
+        return df
+    except Exception as e:
+        st.error(f"Error saat memproses data GSheet: {e}")
+        st.info("Pastikan nama kolom di GSheet SAMA PERSIS dengan list 'COLUMN_NAMES' di kode.")
+        return pd.DataFrame()
+
+
 # -----------------------------------------------------------------
 # APLIKASI STREAMLIT
 # -----------------------------------------------------------------
 
-st.set_page_config(page_title="Kokpit Trader Pro v2.8", layout="wide")
-st.title("🚀 Kokpit Trader Pro v2.8 (Plan -> Log -> Review)")
+st.set_page_config(page_title="Kokpit Trader Pro v3.0", layout="wide")
+
+# --- UPGRADE v3.0: Custom CSS untuk Background Gradient ---
+st.markdown("""
+    <style>
+    .stApp {
+        background: linear-gradient(to right, #ff007f, #8e00ff); /* Pink to Purple */
+        color: white; /* Agar teks default terlihat */
+    }
+    h1, h2, h3, h4, h5, h6, .st-b5, .st-b6, .st-at, .st-au, .st-av, .st-aw, .st-ax, .st-ay, .st-az, .st-b0, .st-b1, .st-b2, .st-b3, .st-b4 {
+        color: white !important; /* Agar semua header dan teks penting terlihat */
+    }
+    .stAlert {
+        color: black !important; /* Agar teks di alert tetap hitam */
+    }
+    /* Mengubah warna teks di sidebar agar terlihat */
+    .css-1d391kg e1fqkh3o1 {
+        color: white !important;
+    }
+    .css-pkzbrp.eqr7zpz4 { /* Menargetkan label multiselect di sidebar */
+        color: white !important;
+    }
+    .stSidebar .stSelectbox > label, 
+    .stSidebar .stMultiSelect > label {
+        color: white !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+# --------------------------------------------------------------
+
+st.title("🚀 Kokpit Trader Pro v3.0 (Plan -> Log -> Review)")
 st.markdown("Dibangun untuk *workflow* trading yang disiplin.")
 
 try:
-    # Koneksi ke GSheet
     client = get_gsheet_client()
     worksheet = open_worksheet(client) if client else None
 
     if worksheet:
         st.success("✅ Berhasil terkoneksi ke Google Sheet 'Trade Journal'!")
 
-        # --- TABS NAVIGASI (v2.8) ---
         tab_kalkulator, tab_input, tab_dashboard = st.tabs([
             "💰 Kalkulator (Plan)", 
             "✍️ Input Trade (Log)", 
@@ -57,47 +119,44 @@ try:
         ])
 
         # ----------------------------------------------------
-        # TAB 1: KALKULATOR RRR & LIQ. PRICE (v2.8)
+        # TAB 1: KALKULATOR RRR & LIQ. PRICE
         # ----------------------------------------------------
         with tab_kalkulator:
             st.header("Perencana Posisi (RRR & Estimasi Likuidasi)")
             st.markdown("Gunakan ini **SEBELUM** Anda menekan tombol *buy/sell* di *exchange*.")
             
             with st.form(key="calculator_form", clear_on_submit=False):
-                col1, col2 = st.columns(2)
+                col_calc_input_1, col_calc_input_2 = st.columns(2)
                 
-                with col1:
+                with col_calc_input_1:
                     st.subheader("Data Rencana")
                     calc_direction = st.selectbox("Direction*", ["LONG", "SHORT"], key="calc_dir")
-                    calc_entry = st.number_input("Entry Price*", value=0.0, help="Harga Anda berencana masuk")
-                    calc_sl = st.number_input("Stop Loss*", value=0.0, help="Harga cut loss Anda")
-                    calc_tp = st.number_input("Take Profit*", value=0.0, help="Harga target profit Anda")
+                    calc_entry = st.number_input("Entry Price*", value=0.0, help="Harga Anda berencana masuk", format="%.8f")
+                    calc_sl = st.number_input("Stop Loss*", value=0.0, help="Harga cut loss Anda", format="%.8f")
+                    calc_tp = st.number_input("Take Profit*", value=0.0, help="Harga target profit Anda", format="%.8f")
                 
-                with col2:
+                with col_calc_input_2:
                     st.subheader("Data Margin & Posisi")
-                    calc_size_usdt = st.number_input("Position Size (USDT)*", value=0.0, help="Total nilai posisi (Value), BUKAN margin.")
+                    calc_size_usdt = st.number_input("Position Size (USDT)*", value=0.0, help="Total nilai posisi (Value), BUKAN margin.", format="%.2f")
                     calc_margin_type = st.selectbox("Margin Type*", ["Isolated", "Cross"], help="Pilih mode margin Anda.")
                     
-                    # Input dinamis berdasarkan Margin Type
                     if calc_margin_type == 'Isolated':
                         calc_leverage = st.number_input("Leverage (x)*", min_value=1, step=1, value=20, help="Leverage untuk mode Isolated.")
-                    else: # Cross
-                        calc_equity = st.number_input("Total Equity (Wallet)*", value=0.0, help="Total ekuitas di dompet futures Anda.")
+                    else: 
+                        calc_equity = st.number_input("Total Equity (Wallet)*", value=0.0, help="Total ekuitas di dompet futures Anda.", format="%.2f")
                 
                 calculate_button = st.form_submit_button(label="Hitung Risk/Reward & Estimasi Likuidasi")
 
-            # --- Area Output Kalkulator ---
             if calculate_button:
                 st.divider()
                 st.subheader("Hasil Perhitungan Rencana:")
                 
-                # Validasi input
                 valid_prices = all([calc_entry > 0, calc_sl > 0, calc_tp > 0, calc_size_usdt > 0])
                 valid_margin = True
                 if calc_margin_type == 'Isolated':
                     if calc_leverage <= 0:
                         valid_margin = False
-                else: # Cross
+                else: 
                     if calc_equity <= 0:
                         valid_margin = False
 
@@ -109,40 +168,34 @@ try:
                 elif calc_direction == "SHORT" and (calc_entry > calc_sl or calc_entry < calc_tp):
                     st.error("❌ Untuk SHORT: SL harus > Entry, dan TP harus < Entry.")
                 else:
-                    # --- Logika Kalkulasi ---
                     qty_koin = calc_size_usdt / calc_entry
                     
                     if calc_direction == "LONG":
                         risk_per_koin = calc_entry - calc_sl
                         reward_per_koin = calc_tp - calc_entry
-                    else: # SHORT
+                    else: 
                         risk_per_koin = calc_sl - calc_entry
                         reward_per_koin = calc_entry - calc_tp
                         
                     risk_dolar = risk_per_koin * qty_koin
                     reward_dolar = reward_per_koin * qty_koin
-                    rrr = np.divide(reward_dolar, risk_dolar)
+                    rrr = np.divide(reward_dolar, risk_dolar) if risk_dolar != 0 else 0 # Pencegahan ZeroDivisionError
                     
-                    # --- Logika Liq. Price ---
                     liq_price = 0.0
                     if calc_margin_type == 'Isolated':
                         margin_isolated = calc_size_usdt / calc_leverage
-                        if calc_direction == 'LONG':
-                            # Harga turun sebanyak (Margin / Qty)
-                            liq_price = calc_entry - (margin_isolated / qty_koin)
-                        else: # SHORT
-                            # Harga naik sebanyak (Margin / Qty)
-                            liq_price = calc_entry + (margin_isolated / qty_koin)
+                        if qty_koin != 0: # Pencegahan ZeroDivisionError
+                            if calc_direction == 'LONG':
+                                liq_price = calc_entry - (margin_isolated / qty_koin)
+                            else: 
+                                liq_price = calc_entry + (margin_isolated / qty_koin)
+                    else: 
+                        if qty_koin != 0: # Pencegahan ZeroDivisionError
+                            if calc_direction == 'LONG':
+                                liq_price = calc_entry - (calc_equity / qty_koin)
+                            else: 
+                                liq_price = calc_entry + (calc_equity / qty_koin)
                     
-                    else: # Cross
-                        if calc_direction == 'LONG':
-                            # Harga turun sebanyak (Total Equity / Qty)
-                            liq_price = calc_entry - (calc_equity / qty_koin)
-                        else: # SHORT
-                            # Harga naik sebanyak (Total Equity / Qty)
-                            liq_price = calc_entry + (calc_equity / qty_koin)
-                    
-                    # --- Tampilkan Hasil ---
                     st.info(f"**Kuantitas Koin:** `{qty_koin:.8f}` (dihitung dari Size / Entry)")
                     
                     col_risk, col_reward, col_rrr = st.columns(3)
@@ -152,10 +205,9 @@ try:
                     
                     st.divider()
                     
-                    # Tampilkan Liq. Price
                     st.metric(
                         label=f"ESTIMASI LIQ. PRICE ({calc_margin_type})", 
-                        value=f"${liq_price:,.2f}"
+                        value=f"${liq_price:,.8f}"
                     )
                     st.warning("`Perhatian:` Estimasi Liq. Price **TIDAK** termasuk *maintenance margin*, *fees*, atau *funding rates*. Harga likuidasi di exchange mungkin sedikit berbeda.")
 
@@ -166,38 +218,39 @@ try:
 
 
         # ----------------------------------------------------
-        # TAB 2: INPUT TRADE (KODE v2.5 ANDA)
+        # TAB 2: INPUT TRADE
         # ----------------------------------------------------
         with tab_input:
             st.header("Catat Trade Baru")
-            st.markdown("Input harga fleksibel (bisa 65000 atau 0.000015). PNL & RRR otomatis.")
+            st.markdown("Input harga fleksibel. PNL & RRR otomatis.")
             
             with st.form(key="trade_form", clear_on_submit=True):
-                col1, col2, col3 = st.columns(3)
+                col_input_1, col_input_2, col_input_3 = st.columns(3)
                 
-                with col1:
+                with col_input_1:
                     st.subheader("Data Setup")
                     pairs = st.text_input("Pairs*", help="e.g., BTC/USDT")
                     direction = st.selectbox("Direction*", ["LONG", "SHORT"])
                     timeframe = st.selectbox("Timeframe*", ["1m", "5m", "15m", "30m", "1H", "4H", "1D"])
                     strategy = st.text_input("Strategy", help="e.g., Break & Retest")
                 
-                with col2:
+                with col_input_2:
                     st.subheader("Data Rencana (Plan)")
-                    entry_price = st.number_input("Entry Price*", value=0.0, help="Harga Anda masuk")
-                    stop_loss = st.number_input("Stop Loss*", value=0.0, help="Harga cut loss")
-                    take_profit = st.number_input("Take Profit*", value=0.0, help="Harga target")
+                    entry_price = st.number_input("Entry Price*", value=0.0, help="Harga Anda masuk", format="%.8f")
+                    stop_loss = st.number_input("Stop Loss*", value=0.0, help="Harga cut loss", format="%.8f")
+                    take_profit = st.number_input("Take Profit*", value=0.0, help="Harga target", format="%.8f")
                     leverage = st.number_input("Leverage (x)*", min_value=1, step=1, value=20)
-                    position_size = st.number_input("Position Size (USDT)*", value=0.0, help="Total nilai posisi, BUKAN margin")
+                    position_size = st.number_input("Position Size (USDT)*", value=0.0, help="Total nilai posisi, BUKAN margin", format="%.2f")
 
-                with col3:
+                with col_input_3:
                     st.subheader("Data Hasil & Psikologis")
-                    exit_price = st.number_input("Exit Price*", value=0.0, help="Harga Anda keluar. Ini akan menghitung PNL otomatis.")
+                    exit_price = st.number_input("Exit Price*", value=0.0, help="Harga Anda keluar. Ini akan menghitung PNL otomatis.", format="%.8f")
                     setup_quality = st.selectbox("Kualitas Setup", ["A (High-Prob)", "B (Good-Prob)", "C (Low-Prob)"])
                     emotion_pre = st.selectbox("Emosi Pre-Trade", ["Confident", "Anxious", "Calm", "FOMO", "Bored"])
                     emotion_post = st.selectbox("Emosi Post-Trade", ["Happy", "Regret", "Angry", "Calm", "Neutral"])
 
                 st.subheader("Review & Pembelajaran")
+                chart_url = st.text_input("Chart URL (TradingView, opsional)")
                 lesson_learned = st.text_area("Lesson Learned (Apa yang harus dilakukan/dihindari?)")
 
                 submit_button = st.form_submit_button(label="Simpan Trade & Hitung PNL")
@@ -210,21 +263,21 @@ try:
                             jakarta_tz = pytz.timezone('Asia/Jakarta')
                             timestamp = datetime.now(jakarta_tz).strftime("%Y-%m-%d %H:%M:%S")
                             
-                            qty_koin = position_size / entry_price
+                            qty_koin = position_size / entry_price if entry_price != 0 else 0
                             pnl_usdt = (exit_price - entry_price) * qty_koin if direction == "LONG" else (entry_price - exit_price) * qty_koin
-                            margin_used = position_size / leverage
-                            pnl_percent = np.divide(pnl_usdt, margin_used) * 100
+                            margin_used = position_size / leverage if leverage != 0 else 0
+                            pnl_percent = np.divide(pnl_usdt, margin_used) * 100 if margin_used != 0 else 0
                             
                             risk_per_koin = abs(entry_price - stop_loss)
                             reward_per_koin = abs(take_profit - entry_price)
-                            rr_ratio = np.divide(reward_per_koin, risk_per_koin)
+                            rr_ratio = np.divide(reward_per_koin, risk_per_koin) if risk_per_koin > 0 else 0 
 
                             new_row = [
                                 timestamp, pairs, direction, entry_price, stop_loss,
                                 take_profit, exit_price, position_size, round(pnl_usdt, 4),
                                 f"{pnl_percent:.2f}%", f"1:{rr_ratio:.2f}", leverage,
                                 timeframe, strategy, setup_quality, emotion_pre,
-                                emotion_post, lesson_learned
+                                emotion_post, lesson_learned, chart_url
                             ]
                             
                             worksheet.append_row(new_row)
@@ -236,50 +289,60 @@ try:
                             else:
                                 st.warning(f"Loss: ${pnl_usdt:,.2f} ({pnl_percent:.2f}%) - Review pelajarannya!")
 
+
         # ----------------------------------------------------
-        # TAB 3: DASHBOARD (KODE v2.5 ANDA + BUG FIX)
+        # TAB 3: DASHBOARD (Upgrade v3.0)
         # ----------------------------------------------------
         with tab_dashboard:
             st.header("Dashboard Performa Trading")
             st.markdown("Review ini setiap akhir pekan. Data adalah guru terbaik.")
             
-            with st.spinner("Memuat data dari GSheet..."):
-                data = worksheet.get_all_records()
-                
-            if not data:
+            with st.spinner("Memuat dan memproses data dari GSheet..."):
+                df_raw = get_data_as_dataframe(worksheet)
+            
+            if df_raw.empty:
                 st.warning("Data jurnal masih kosong. Silakan input trade pertama Anda!")
             else:
-                df = pd.DataFrame(data)
+                # --- UPGRADE v3.0: Sidebar Filters ---
+                st.sidebar.header("📊 Filter Dashboard")
                 
-                # --- Data Cleaning ---
-                # !!! BUG FIX v2.8: Mengganti PNL_(USNT) -> PNL_(USDT) !!!
-                df["PNL_(USDT)"] = pd.to_numeric(df["PNL_(USDT)"], errors='coerce').fillna(0) 
-                df["Timestamp"] = pd.to_datetime(df["Timestamp"], format="%Y-%m-%d %H:%M:%S", errors='coerce')
-                df = df.dropna(subset=['Timestamp'])
+                unique_pairs = df_raw["Pairs"].unique()
+                selected_pairs = st.sidebar.multiselect("Filter Pairs", unique_pairs, default=unique_pairs)
                 
-                # --- Tampilan Dashboard ---
-                st.subheader("Semua Catatan Trade (20 Terakhir)")
-                st.dataframe(df.sort_values(by="Timestamp", ascending=False).head(20))
+                unique_strategies = df_raw[df_raw["Strategy"] != '']["Strategy"].unique()
+                selected_strategies = st.sidebar.multiselect("Filter Strategi", unique_strategies, default=unique_strategies)
+
+                unique_setup_quality = df_raw["Setup Quality"].unique()
+                selected_setup_quality = st.sidebar.multiselect("Filter Kualitas Setup", unique_setup_quality, default=unique_setup_quality)
+
+                df = df_raw[
+                    (df_raw["Pairs"].isin(selected_pairs)) &
+                    (df_raw["Strategy"].isin(unique_strategies if not selected_strategies else selected_strategies)) &
+                    (df_raw["Setup Quality"].isin(selected_setup_quality))
+                ].copy() # Tambah .copy() untuk menghindari SettingWithCopyWarning
                 
-                st.divider()
-                st.subheader("Analisis Cepat Performa")
+                if df.empty:
+                    st.warning("Tidak ada data yang cocok dengan filter Anda.")
+                    st.stop()
+
+                st.subheader("Analisis Cepat Performa (Sesuai Filter)")
                 
-                total_pnl = df["PNL_(USDT)"].sum()
+                total_pnl = df["PNL (USDT)"].sum()
                 total_trades = len(df)
-                wins = df[df["PNL_(USDT)"] > 0]
-                losses = df[df["PNL_(USDT)"] < 0]
+                wins = df[df["PNL (USDT)"] > 0]
+                losses = df[df["PNL (USDT)"] < 0]
                 
                 total_wins = len(wins)
                 total_losses = len(losses)
                 win_rate = (total_wins / total_trades) * 100 if total_trades > 0 else 0
-                avg_win = wins["PNL_(USDT)"].mean() if total_wins > 0 else 0
-                avg_loss = abs(losses["PNL_(USDT)"].mean()) if total_losses > 0 else 0
+                avg_win = wins["PNL (USDT)"].mean() if total_wins > 0 else 0
+                avg_loss = abs(losses["PNL (USDT)"].mean()) if total_losses > 0 else 0
                 
-                # Perbaikan kecil untuk profit factor jika tidak ada loss
-                total_profit = wins["PNL_(USDT)"].sum()
-                total_loss_abs = abs(losses["PNL_(USDT)"].sum())
-                profit_factor = np.divide(total_profit, total_loss_abs) if total_loss_abs > 0 else 999.0 # Anggap 999 jika tdk ada loss
+                total_profit = wins["PNL (USDT)"].sum()
+                total_loss_abs = abs(losses["PNL (USDT)"].sum())
+                profit_factor = np.divide(total_profit, total_loss_abs) if total_loss_abs > 0 else 999.0 
                 
+                # --- UPGRADE v3.0: Metrik dalam 2 baris kolom ---
                 col1, col2, col3 = st.columns(3)
                 col1.metric("Total PNL (USDT)", f"${total_pnl:,.2f}")
                 col2.metric("Total Trades", total_trades)
@@ -290,23 +353,72 @@ try:
                 col5.metric("Avg. Loss ($)", f"${avg_loss:,.2f}")
                 col6.metric("Profit Factor", f"{profit_factor:,.2f}", help="Total Profit / Total Loss")
 
+                st.divider()
+
                 st.subheader("Equity Curve (Kumulatif PNL)")
                 df_sorted = df.sort_values(by="Timestamp")
-                df_sorted['Cumulative PNL'] = df_sorted["PNL_(USDT)"].cumsum()
-                st.line_chart(df_sorted, y='Cumulative PNL', x='Timestamp')
+                df_sorted['Cumulative PNL'] = df_sorted["PNL (USDT)"].cumsum()
+                # --- UPGRADE v3.0: Set use_container_width agar chart tidak terlalu besar ---
+                st.line_chart(df_sorted, y='Cumulative PNL', x='Timestamp', use_container_width=True)
                 
-                st.subheader("Analisis PNL berdasarkan Emosi Pre-Trade")
-                pnl_by_emotion = df.groupby("Emotion_pre_trade_Confident/Anxious/Calm")["PNL_(USDT)"].sum()
-                st.bar_chart(pnl_by_emotion)
-                st.markdown("`Insight:` Cek emosi mana yang paling sering menghasilkan *loss*.")
+                
+                st.subheader("Analisis Performa Mendalam")
+                
+                # --- UPGRADE v3.0: 3 kolom untuk chart analisis ---
+                col_analytic_1, col_analytic_2, col_analytic_3 = st.columns(3)
+                
+                with col_analytic_1:
+                    st.markdown("**PNL Berdasarkan Strategi**")
+                    pnl_by_strategy = df[df["Strategy"] != ''].groupby("Strategy")["PNL (USDT)"].sum().sort_values(ascending=False)
+                    st.bar_chart(pnl_by_strategy, use_container_width=True)
+
+                with col_analytic_2:
+                    st.markdown("**PNL Berdasarkan Kualitas Setup**")
+                    pnl_by_setup = df.groupby("Setup Quality")["PNL (USDT)"].sum().sort_values(ascending=False)
+                    st.bar_chart(pnl_by_setup, use_container_width=True)
+
+                with col_analytic_3:
+                    st.markdown("**PNL Berdasarkan Emosi Pre-Trade**")
+                    pnl_by_emotion = df.groupby("Emotion Pre-Trade")["PNL (USDT)"].sum().sort_values(ascending=False)
+                    st.bar_chart(pnl_by_emotion, use_container_width=True)
+                
+                st.markdown("`Insight:` Cek strategi, kualitas setup, dan emosi mana yang paling profit/rugi.")
+                st.divider()
+
+                # --- UPGRADE v3.0: Bungkus dataFrame dengan expander ---
+                with st.expander("Lihat Semua Catatan Trade (Sesuai Filter)", expanded=False):
+                    st.dataframe(df.sort_values(by="Timestamp", ascending=False), use_container_width=True)
+                
+                st.subheader("Pelajaran Penting (Review)")
+                col_lesson_1, col_lesson_2 = st.columns(2)
+                
+                with col_lesson_1:
+                    st.success("Top 3 Wins")
+                    top_wins = df.sort_values(by="PNL (USDT)", ascending=False).head(3)
+                    for _, row in top_wins.iterrows():
+                        st.write(f"**${row['PNL (USDT)']:,.2f}** - {row['Pairs']} ({row['Strategy']})")
+                        if pd.notna(row['Chart URL']) and row['Chart URL'] != '':
+                            st.markdown(f"[Lihat Chart]({row['Chart URL']})")
+                        st.caption(f"Lesson: {row['Lesson Learned']}")
+                
+                with col_lesson_2:
+                    st.error("Top 3 Losses")
+                    top_losses = df.sort_values(by="PNL (USDT)", ascending=True).head(3)
+                    for _, row in top_losses.iterrows():
+                        st.write(f"**${row['PNL (USDT)']:,.2f}** - {row['Pairs']} ({row['Strategy']})")
+                        if pd.notna(row['Chart URL']) and row['Chart URL'] != '':
+                            st.markdown(f"[Lihat Chart]({row['Chart URL']})")
+                        st.caption(f"Lesson: {row['Lesson Learned']}")
+
 
 except Exception as e:
     if "gcp_service_account" in str(e):
-         st.error("Error: 'gcp_service_account' tidak ditemukan di Streamlit Secrets. Pastikan 'secrets.toml' Anda sudah benar.")
+        st.error("Error: 'gcp_service_account' tidak ditemukan di Streamlit Secrets. Pastikan 'secrets.toml' Anda sudah benar.")
     elif "SpreadsheetNotFound" in str(e):
         st.error("Error: GSheet 'Trade Journal' tidak ditemukan. Cek nama file dan pastikan email bot sudah di-share.")
     elif "Mismatched" in str(e) or "column count" in str(e):
-         st.error("Error: Jumlah kolom GSheet (18) tidak cocok dengan kode. Pastikan urutan di GSheet SAMA PERSIS dengan di `new_row`.")
+        st.error("Error: Jumlah kolom GSheet (sekarang 19) tidak cocok dengan kode. Pastikan urutan di GSheet SAMA PERSIS dengan 'COLUMN_NAMES'.")
+        st.error("Urutan yang Benar: Timestamp, Pairs, Direction, Entry Price, Stop Loss, Take Profit, Exit Price, Position Size, PNL (USDT), PNL (%), RRR, Leverage, Timeframe, Strategy, Setup Quality, Emotion Pre-Trade, Emotion Post-Trade, Lesson Learned, Chart URL")
     else:
         st.error(f"Terjadi Error. Cek koneksi atau detail GSheet Anda.")
         st.error(f"Error detail: {e}")
