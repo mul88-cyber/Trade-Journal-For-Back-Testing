@@ -4,4 +4,3 @@ numpy
 pytz
 gspread==5.12.4
 google-auth==2.29.0
-google-oauth2-service-account==1.4.0
