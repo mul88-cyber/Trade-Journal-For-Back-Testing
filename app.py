@@ -108,8 +108,7 @@ def get_data_as_dataframe(_worksheet, columns):
 # APLIKASI STREAMLIT
 # -----------------------------------------------------------------
 
-# [UPDATE v3.4] Ganti versi title
-st.set_page_config(page_title="Kokpit Trader Pro v3.4", layout="wide")
+st.set_page_config(page_title="Kokpit Trader Pro v3.5", layout="wide")
 
 # --- Custom CSS (Gradien "Dark Ocean") ---
 st.markdown("""
@@ -138,8 +137,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 # --------------------------------------------------------------
 
-# [UPDATE v3.4] Ganti versi title
-st.title("🚀 Kokpit Trader Pro v3.4 (Plan -> Backtest -> Log -> Review)")
+st.title("🚀 Kokpit Trader Pro v3.5 (Plan -> Backtest -> Log -> Review)")
 st.markdown("Dibangun untuk *workflow* trading yang disiplin.")
 
 try:
@@ -151,10 +149,12 @@ try:
     if worksheet and backtest_worksheet:
         st.success("✅ Berhasil terkoneksi ke GSheet 'Trade Journal' (Sheet: sheet1 & BackTest)!")
 
-        tab_kalkulator, tab_backtest, tab_input, tab_dashboard = st.tabs([
+        # [UPDATE v3.5] Menambah 1 tab baru "Backtest Review"
+        tab_kalkulator, tab_backtest_execute, tab_input_live, tab_backtest_review, tab_dashboard_live = st.tabs([
             "💰 Kalkulator (Plan)", 
-            "📈 Backtest (Execute)",
+            "📈 Backtest (Execute)", 
             "✍️ Input Trade (Log)", 
+            "🔬 Backtest Review", # [BARU v3.5]
             "📊 Dashboard (Review)"
         ])
 
@@ -260,7 +260,7 @@ try:
         # ----------------------------------------------------
         # TAB 2: BACKTEST (Execute)
         # ----------------------------------------------------
-        with tab_backtest:
+        with tab_backtest_execute:
             st.header("Catatan Backtest Strategi")
             st.markdown("Uji strategi Anda di sini. Input setup, lalu update saat 'ditutup'.")
             
@@ -316,12 +316,12 @@ try:
             st.subheader("2. Dashboard & Update Posisi Terbuka")
             
             with st.spinner("Memuat data backtest..."):
-                df_bt_raw = get_data_as_dataframe(backtest_worksheet, BACKTEST_COLUMN_NAMES)
+                df_bt_raw_for_closing = get_data_as_dataframe(backtest_worksheet, BACKTEST_COLUMN_NAMES)
             
-            if df_bt_raw.empty:
+            if df_bt_raw_for_closing.empty:
                 st.info("Belum ada data backtest. Silakan input setup pertama Anda.")
             else:
-                df_open = df_bt_raw[df_bt_raw["Status"] == "Open"].copy()
+                df_open = df_bt_raw_for_closing[df_bt_raw_for_closing["Status"] == "Open"].copy()
                 
                 if df_open.empty:
                     st.success("🎉 Selamat! Tidak ada posisi backtest yang terbuka.")
@@ -331,7 +331,6 @@ try:
                     with col_dash_bt_1:
                         st.markdown("**Posisi Backtest (Status: Open)**")
                         cols_to_show = ["Timestamp", "Setup Uniq", "Pairs", "Direction", "Strategy", "Leverage", "Entry Price", "Stop Loss", "Take Profit"]
-                        # [UPDATE v3.4] Ganti use_container_width=True -> width='stretch'
                         st.dataframe(df_open[cols_to_show].sort_values(by="Timestamp", ascending=False), width='stretch')
                     
                     with col_dash_bt_2:
@@ -350,7 +349,7 @@ try:
                                     with st.spinner(f"Menutup posisi '{setup_to_close}'..."):
                                         try:
                                             trade_data = df_open[df_open["Setup Uniq"] == setup_to_close].iloc[0]
-                                            sheet_row_index = df_bt_raw[df_bt_raw["Setup Uniq"] == setup_to_close].index[0] + 2
+                                            sheet_row_index = df_bt_raw_for_closing[df_bt_raw_for_closing["Setup Uniq"] == setup_to_close].index[0] + 2
                                             
                                             entry_price = float(trade_data["Entry Price"])
                                             position_size = float(trade_data["Position Size"])
@@ -395,7 +394,7 @@ try:
         # ----------------------------------------------------
         # TAB 3: INPUT TRADE
         # ----------------------------------------------------
-        with tab_input:
+        with tab_input_live:
             st.header("Catat Trade Baru (Live Trade)")
             st.markdown("Input harga fleksibel. PNL & RRR otomatis.")
             
@@ -467,9 +466,107 @@ try:
 
 
         # ----------------------------------------------------
-        # TAB 4: DASHBOARD (UI/UX & Fix)
+        # [BARU v3.5] TAB 4: BACKTEST REVIEW
         # ----------------------------------------------------
-        with tab_dashboard:
+        with tab_backtest_review:
+            st.header("Dashboard Review Performa Backtest")
+            st.markdown("Validasi strategi Anda di sini. Apakah Win Rate & Profit Factor-nya sudah layak?")
+            
+            if st.button("Refresh Data Review Backtest"):
+                st.cache_data.clear()
+                st.success("Cache data backtest di-clear!")
+                st.rerun()
+            
+            with st.spinner("Memuat dan memproses data backtest..."):
+                df_bt_raw = get_data_as_dataframe(backtest_worksheet, BACKTEST_COLUMN_NAMES)
+                # Ambil hanya data yang sudah ditutup
+                df_bt_closed = df_bt_raw[df_bt_raw["Status"] == "Closed"].copy()
+            
+            if df_bt_closed.empty:
+                st.warning("Data backtest (Closed) masih kosong. Silakan tutup beberapa posisi backtest Anda!")
+            else:
+                # --- Sidebar Filters untuk Backtest ---
+                st.sidebar.header("🔬 Filter Backtest Review")
+                
+                bt_unique_pairs = df_bt_closed["Pairs"].unique()
+                bt_selected_pairs = st.sidebar.multiselect("Filter Pairs (Backtest)", bt_unique_pairs, default=bt_unique_pairs, key="bt_pairs_filter")
+                
+                bt_unique_strategies = df_bt_closed[df_bt_closed["Strategy"] != '']["Strategy"].unique()
+                bt_selected_strategies = st.sidebar.multiselect("Filter Strategi (Backtest)", bt_unique_strategies, default=bt_unique_strategies, key="bt_strat_filter")
+
+                bt_unique_timeframe = df_bt_closed["Timeframe"].unique()
+                bt_selected_timeframe = st.sidebar.multiselect("Filter Timeframe (Backtest)", bt_unique_timeframe, default=bt_unique_timeframe, key="bt_tf_filter")
+
+                # Terapkan filter
+                df_bt_filtered = df_bt_closed[
+                    (df_bt_closed["Pairs"].isin(bt_selected_pairs)) &
+                    (df_bt_closed["Strategy"].isin(bt_unique_strategies if not bt_selected_strategies else bt_selected_strategies)) &
+                    (df_bt_closed["Timeframe"].isin(bt_selected_timeframe))
+                ].copy() 
+                
+                if df_bt_filtered.empty:
+                    st.warning("Tidak ada data backtest yang cocok dengan filter Anda.")
+                    st.stop() 
+
+                st.subheader("Analisis Cepat Performa Backtest (Sesuai Filter)")
+                
+                bt_total_pnl = df_bt_filtered["PNL (USDT)"].sum()
+                bt_total_trades = len(df_bt_filtered)
+                bt_wins = df_bt_filtered[df_bt_filtered["PNL (USDT)"] > 0]
+                bt_losses = df_bt_filtered[df_bt_filtered["PNL (USDT)"] < 0]
+                
+                bt_total_wins = len(bt_wins)
+                bt_total_losses = len(bt_losses)
+                bt_win_rate = (bt_total_wins / bt_total_trades) * 100 if bt_total_trades > 0 else 0
+                bt_avg_win = bt_wins["PNL (USDT)"].mean() if bt_total_wins > 0 else 0
+                bt_avg_loss = abs(bt_losses["PNL (USDT)"].mean()) if bt_total_losses > 0 else 0
+                
+                bt_total_profit = bt_wins["PNL (USDT)"].sum()
+                bt_total_loss_abs = abs(bt_losses["PNL (USDT)"].sum())
+                bt_profit_factor = np.divide(bt_total_profit, bt_total_loss_abs) if bt_total_loss_abs > 0 else 999.0 
+                
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Total PNL Backtest (USDT)", f"${bt_total_pnl:,.2f}")
+                col2.metric("Total Trades Backtest", bt_total_trades)
+                col3.metric("Win Rate Backtest", f"{bt_win_rate:.2f}%")
+                
+                col4, col5, col6 = st.columns(3)
+                col4.metric("Avg. Win ($)", f"${bt_avg_win:,.2f}")
+                col5.metric("Avg. Loss ($)", f"${bt_avg_loss:,.2f}")
+                col6.metric("Profit Factor", f"{bt_profit_factor:,.2f}", help="Total Profit / Total Loss")
+
+                st.divider()
+
+                st.subheader("Equity Curve (Backtest)")
+                bt_df_sorted = df_bt_filtered.sort_values(by="Timestamp")
+                bt_df_sorted['Cumulative PNL'] = bt_df_sorted["PNL (USDT)"].cumsum()
+                st.line_chart(bt_df_sorted, y='Cumulative PNL', x='Timestamp', width='stretch')
+                
+                
+                st.subheader("Analisis Performa Backtest Mendalam")
+                
+                col_bt_analytic_1, col_bt_analytic_2 = st.columns(2)
+                
+                with col_bt_analytic_1:
+                    st.markdown("**PNL Backtest Berdasarkan Strategi**")
+                    bt_pnl_by_strategy = df_bt_filtered[df_bt_filtered["Strategy"] != ''].groupby("Strategy")["PNL (USDT)"].sum().sort_values(ascending=False)
+                    st.bar_chart(bt_pnl_by_strategy, width='stretch')
+
+                with col_bt_analytic_2:
+                    st.markdown("**PNL Backtest Berdasarkan Timeframe**")
+                    bt_pnl_by_tf = df_bt_filtered.groupby("Timeframe")["PNL (USDT)"].sum().sort_values(ascending=False)
+                    st.bar_chart(bt_pnl_by_tf, width='stretch')
+                
+                st.divider()
+
+                with st.expander("Lihat Semua Catatan Backtest (Sesuai Filter & Sudah Ditutup)", expanded=False):
+                    st.dataframe(df_bt_filtered.sort_values(by="Timestamp", ascending=False), width='stretch')
+
+
+        # ----------------------------------------------------
+        # TAB 5: DASHBOARD (Review Live Trade)
+        # ----------------------------------------------------
+        with tab_dashboard_live:
             st.header("Dashboard Performa Trading (Live)")
             st.markdown("Review ini setiap akhir pekan. Data adalah guru terbaik.")
             
@@ -488,13 +585,13 @@ try:
                 st.sidebar.header("📊 Filter Dashboard Jurnal")
                 
                 unique_pairs = df_raw["Pairs"].unique()
-                selected_pairs = st.sidebar.multiselect("Filter Pairs", unique_pairs, default=unique_pairs)
+                selected_pairs = st.sidebar.multiselect("Filter Pairs", unique_pairs, default=unique_pairs, key="live_pairs_filter")
                 
                 unique_strategies = df_raw[df_raw["Strategy"] != '']["Strategy"].unique()
-                selected_strategies = st.sidebar.multiselect("Filter Strategi", unique_strategies, default=unique_strategies)
+                selected_strategies = st.sidebar.multiselect("Filter Strategi", unique_strategies, default=unique_strategies, key="live_strat_filter")
 
                 unique_setup_quality = df_raw["Setup Quality"].unique()
-                selected_setup_quality = st.sidebar.multiselect("Filter Kualitas Setup", unique_setup_quality, default=unique_setup_quality)
+                selected_setup_quality = st.sidebar.multiselect("Filter Kualitas Setup", unique_setup_quality, default=unique_setup_quality, key="live_setup_filter")
 
                 df = df_raw[
                     (df_raw["Pairs"].isin(selected_pairs)) &
@@ -538,7 +635,6 @@ try:
                 st.subheader("Equity Curve (Kumulatif PNL)")
                 df_sorted = df.sort_values(by="Timestamp")
                 df_sorted['Cumulative PNL'] = df_sorted["PNL (USDT)"].cumsum()
-                # [UPDATE v3.4] Ganti use_container_width=True -> width='stretch'
                 st.line_chart(df_sorted, y='Cumulative PNL', x='Timestamp', width='stretch')
                 
                 
@@ -549,26 +645,22 @@ try:
                 with col_analytic_1:
                     st.markdown("**PNL Berdasarkan Strategi**")
                     pnl_by_strategy = df[df["Strategy"] != ''].groupby("Strategy")["PNL (USDT)"].sum().sort_values(ascending=False)
-                    # [UPDATE v3.4] Ganti use_container_width=True -> width='stretch'
                     st.bar_chart(pnl_by_strategy, width='stretch')
 
                 with col_analytic_2:
                     st.markdown("**PNL Berdasarkan Kualitas Setup**")
                     pnl_by_setup = df.groupby("Setup Quality")["PNL (USDT)"].sum().sort_values(ascending=False)
-                    # [UPDATE v3.4] Ganti use_container_width=True -> width='stretch'
                     st.bar_chart(pnl_by_setup, width='stretch')
 
                 with col_analytic_3:
                     st.markdown("**PNL Berdasarkan Emosi Pre-Trade**")
                     pnl_by_emotion = df.groupby("Emotion Pre-Trade")["PNL (USDT)"].sum().sort_values(ascending=False)
-                    # [UPDATE v3.4] Ganti use_container_width=True -> width='stretch'
                     st.bar_chart(pnl_by_emotion, width='stretch')
                 
                 st.markdown("`Insight:` Cek strategi, kualitas setup, dan emosi mana yang paling profit/rugi.")
                 st.divider()
 
                 with st.expander("Lihat Semua Catatan Trade (Sesuai Filter)", expanded=False):
-                    # [UPDATE v3.4] Ganti use_container_width=True -> width='stretch'
                     st.dataframe(df.sort_values(by="Timestamp", ascending=False), width='stretch')
                 
                 st.subheader("Pelajaran Penting (Review)")
