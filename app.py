@@ -23,12 +23,12 @@ COLUMN_NAMES = [
     "Emotion Pre-Trade", "Emotion Post-Trade", "Lesson Learned" 
 ]
 
-# --- [BARU] Kolom untuk Sheet 'BackTest' ---
-# Pastikan Anda membuat header ini di GSheet Anda
+# --- [UPDATE v3.3] Kolom untuk Sheet 'BackTest' (Total 16) ---
+# Pastikan Anda mengupdate header ini di GSheet Anda
 BACKTEST_COLUMN_NAMES = [
     "Timestamp", "Setup Uniq", "Pairs", "Direction", "Strategy", "Timeframe",
-    "Entry Price", "Stop Loss", "Take Profit", "Position Size", "Status",
-    "Exit Price", "PNL (USDT)", "Notes"
+    "Entry Price", "Stop Loss", "Take Profit", "Position Size", "Leverage", "Status",
+    "Exit Price", "PNL (USDT)", "PNL (%)", "Notes"
 ]
 
 
@@ -55,7 +55,7 @@ def open_worksheet(_client):
         st.error(f"Error saat membuka GSheet 'Trade Journal': {e}")
         return None
 
-# --- [BARU] Fungsi untuk membuka sheet BackTest ---
+# --- Fungsi untuk membuka sheet BackTest ---
 @st.cache_data(ttl=60)
 def open_backtest_worksheet(_client):
     """
@@ -109,7 +109,7 @@ def get_data_as_dataframe(_worksheet, columns):
 # APLIKASI STREAMLIT
 # -----------------------------------------------------------------
 
-st.set_page_config(page_title="Kokpit Trader Pro v3.2", layout="wide")
+st.set_page_config(page_title="Kokpit Trader Pro v3.3", layout="wide")
 
 # --- Custom CSS (Gradien "Dark Ocean") ---
 st.markdown("""
@@ -138,13 +138,13 @@ st.markdown("""
     """, unsafe_allow_html=True)
 # --------------------------------------------------------------
 
-st.title("🚀 Kokpit Trader Pro v3.2 (Plan -> Backtest -> Log -> Review)")
+st.title("🚀 Kokpit Trader Pro v3.3 (Plan -> Backtest -> Log -> Review)")
 st.markdown("Dibangun untuk *workflow* trading yang disiplin.")
 
 try:
     client = get_gsheet_client()
     worksheet = open_worksheet(client) if client else None
-    backtest_worksheet = open_backtest_worksheet(client) if client else None # [BARU]
+    backtest_worksheet = open_backtest_worksheet(client) if client else None 
 
     # Hanya jalankan jika KEDUA sheet berhasil terkoneksi
     if worksheet and backtest_worksheet:
@@ -257,12 +257,13 @@ try:
 
 
         # ----------------------------------------------------
-        # [BARU] TAB 2: BACKTEST (Execute)
+        # TAB 2: BACKTEST (Execute)
         # ----------------------------------------------------
         with tab_backtest:
             st.header("Catatan Backtest Strategi")
             st.markdown("Uji strategi Anda di sini. Input setup, lalu update saat 'ditutup'.")
             
+            # Tombol refresh manual
             if st.button("Refresh Data Backtest"):
                 st.cache_data.clear()
                 st.success("Cache data backtest di-clear!")
@@ -281,6 +282,8 @@ try:
                     bt_strategy = st.text_input("Strategy*", help="e.g., Break & Retest")
                     bt_timeframe = st.selectbox("Timeframe*", ["1m", "5m", "15m", "30m", "1H", "4H", "1D"], key="bt_tf")
                     bt_position_size = st.number_input("Position Size (USDT)*", value=100.0, help="Total nilai posisi, BUKAN margin", format="%.2f")
+                    # [BARU v3.3] Menambahkan input leverage
+                    bt_leverage = st.number_input("Leverage (x)*", min_value=1, step=1, value=20)
 
                 with col_bt_3:
                     bt_entry = st.number_input("Entry Price*", value=0.0, format="%.2f")
@@ -290,17 +293,19 @@ try:
                 submit_backtest_button = st.form_submit_button("Simpan Setup Backtest (Status: Open)")
                 
                 if submit_backtest_button:
-                    if not all([bt_setup_uniq, bt_pairs, bt_strategy, bt_entry > 0, bt_sl > 0, bt_tp > 0, bt_position_size > 0]):
-                        st.error("❌ Semua field (*) wajib diisi dan harga/size tidak boleh nol (0).")
+                    # [UPDATE v3.3] Menambahkan bt_leverage di validasi
+                    if not all([bt_setup_uniq, bt_pairs, bt_strategy, bt_entry > 0, bt_sl > 0, bt_tp > 0, bt_position_size > 0, bt_leverage > 0]):
+                        st.error("❌ Semua field (*) wajib diisi dan harga/size/leverage tidak boleh nol (0).")
                     else:
                         with st.spinner("Menyimpan setup backtest..."):
                             jakarta_tz = pytz.timezone('Asia/Jakarta')
                             timestamp = datetime.now(jakarta_tz).strftime("%Y-%m-%d %H:%M:%S")
                             
+                            # [UPDATE v3.3] Menambahkan bt_leverage dan PNL(%) placeholder
                             new_row = [
                                 timestamp, bt_setup_uniq, bt_pairs, bt_direction, bt_strategy, bt_timeframe,
-                                bt_entry, bt_sl, bt_tp, bt_position_size, "Open",
-                                "", "", "" # Exit Price, PNL, Notes (kosong)
+                                bt_entry, bt_sl, bt_tp, bt_position_size, bt_leverage, "Open",
+                                "", "", "", "" # Exit Price, PNL (USDT), PNL (%), Notes (kosong)
                             ]
                             
                             backtest_worksheet.append_row(new_row)
@@ -328,8 +333,8 @@ try:
                     
                     with col_dash_bt_1:
                         st.markdown("**Posisi Backtest (Status: Open)**")
-                        # Tampilkan kolom yg relevan saja
-                        cols_to_show = ["Timestamp", "Setup Uniq", "Pairs", "Direction", "Strategy", "Entry Price", "Stop Loss", "Take Profit"]
+                        # [UPDATE v3.3] Tampilkan Leverage di dashboard
+                        cols_to_show = ["Timestamp", "Setup Uniq", "Pairs", "Direction", "Strategy", "Leverage", "Entry Price", "Stop Loss", "Take Profit"]
                         st.dataframe(df_open[cols_to_show].sort_values(by="Timestamp", ascending=False), use_container_width=True)
                     
                     with col_dash_bt_2:
@@ -352,21 +357,29 @@ try:
                                             trade_data = df_open[df_open["Setup Uniq"] == setup_to_close].iloc[0]
                                             
                                             # 2. Cari row index di GSheet (PENTING: +2 karena 1-index dan header)
-                                            # Kita cari di df_bt_raw (data mentah) untuk index yg benar
                                             sheet_row_index = df_bt_raw[df_bt_raw["Setup Uniq"] == setup_to_close].index[0] + 2
                                             
                                             # 3. Ambil data untuk kalkulasi PNL
                                             entry_price = float(trade_data["Entry Price"])
                                             position_size = float(trade_data["Position Size"])
                                             direction = trade_data["Direction"]
+                                            # [BARU v3.3] Ambil leverage
+                                            leverage = float(trade_data["Leverage"])
                                             
                                             qty_koin = position_size / entry_price if entry_price != 0 else 0
                                             pnl_usdt = (bt_exit_price - entry_price) * qty_koin if direction == "LONG" else (entry_price - bt_exit_price) * qty_koin
                                             
+                                            # [BARU v3.3] Hitung PNL %
+                                            margin_used = position_size / leverage if leverage != 0 else 0
+                                            pnl_percent_float = np.divide(pnl_usdt, margin_used) * 100 if margin_used != 0 else 0
+                                            pnl_percent_str = f"{pnl_percent_float:.2f}%"
+
+                                            
                                             # 4. Tentukan kolom GSheet yg akan di-update (1-indexed)
                                             col_status_index = BACKTEST_COLUMN_NAMES.index("Status") + 1
                                             col_exit_index = BACKTEST_COLUMN_NAMES.index("Exit Price") + 1
-                                            col_pnl_index = BACKTEST_COLUMN_NAMES.index("PNL (USDT)") + 1
+                                            col_pnl_usdt_index = BACKTEST_COLUMN_NAMES.index("PNL (USDT)") + 1
+                                            col_pnl_percent_index = BACKTEST_COLUMN_NAMES.index("PNL (%)") + 1 # [BARU v3.3]
                                             col_notes_index = BACKTEST_COLUMN_NAMES.index("Notes") + 1
                                             
                                             # 5. Siapkan data untuk batch update (lebih cepat)
@@ -380,8 +393,13 @@ try:
                                                     'values': [[bt_exit_price]]
                                                 },
                                                 {
-                                                    'range': f'R{sheet_row_index}C{col_pnl_index}',
+                                                    'range': f'R{sheet_row_index}C{col_pnl_usdt_index}',
                                                     'values': [[round(pnl_usdt, 4)]]
+                                                },
+                                                # [BARU v3.3] Update PNL (%)
+                                                {
+                                                    'range': f'R{sheet_row_index}C{col_pnl_percent_index}',
+                                                    'values': [[pnl_percent_str]]
                                                 },
                                                 {
                                                     'range': f'R{sheet_row_index}C{col_notes_index}',
@@ -395,9 +413,9 @@ try:
                                             st.cache_data.clear() # Wajib clear cache
                                             st.success(f"✅ Posisi '{setup_to_close}' ditutup!")
                                             if pnl_usdt > 0:
-                                                st.success(f"Profit: ${pnl_usdt:,.2f}")
+                                                st.success(f"Profit: ${pnl_usdt:,.2f} ({pnl_percent_str})")
                                             else:
-                                                st.error(f"Loss: ${pnl_usdt:,.2f}")
+                                                st.error(f"Loss: ${pnl_usdt:,.2f} ({pnl_percent_str})")
                                             st.rerun() # Refresh halaman
                                             
                                         except Exception as e:
@@ -600,7 +618,6 @@ except Exception as e:
         st.error("Error: 'gcp_service_account' tidak ditemukan di Streamlit Secrets. Pastikan 'secrets.toml' Anda sudah benar.")
     elif "SpreadsheetNotFound" in str(e):
         st.error("Error: GSheet 'Trade Journal' tidak ditemukan. Cek nama file dan pastikan email bot sudah di-share.")
-    # [BARU] Error message lebih spesifik
     elif "WorksheetNotFound" in str(e):
          st.error("Error: Sheet 'BackTest' tidak ditemukan. Pastikan Anda sudah membuat sheet baru di GSheet Anda dengan nama 'BackTest'.")
     elif "Mismatched" in str(e) or "column count" in str(e):
