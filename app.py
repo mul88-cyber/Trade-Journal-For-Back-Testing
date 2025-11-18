@@ -108,7 +108,7 @@ def get_data_as_dataframe(_worksheet, columns):
 # APLIKASI STREAMLIT
 # -----------------------------------------------------------------
 
-st.set_page_config(page_title="Kokpit Succes Pro v3.5", layout="wide")
+st.set_page_config(page_title="Kokpit Trader Pro v3.6", layout="wide")
 
 # --- Custom CSS (Gradien "Dark Ocean") ---
 st.markdown("""
@@ -137,7 +137,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 # --------------------------------------------------------------
 
-st.title("🚀 Kokpit Succes Pro v3.5 (Plan -> Backtest -> Log -> Review)")
+st.title("🚀 Kokpit Trader Pro v3.6 (Plan -> Backtest -> Log -> Review)")
 st.markdown("Dibangun untuk *workflow* trading yang disiplin.")
 
 try:
@@ -149,171 +149,145 @@ try:
     if worksheet and backtest_worksheet:
         st.success("✅ Berhasil terkoneksi ke GSheet 'Trade Journal' (Sheet: sheet1 & BackTest)!")
 
-        # [UPDATE v3.5] Menambah 1 tab baru "Backtest Review"
-        tab_kalkulator, tab_backtest_execute, tab_input_live, tab_backtest_review, tab_dashboard_live = st.tabs([
-            "💰 Kalkulator (Plan)", 
-            "📈 Backtest (Execute)", 
+        # [UPDATE v3.6] Menggabungkan Tab 1 & 2. Total 4 Tab
+        tab_plan_and_backtest, tab_input_live, tab_backtest_review, tab_dashboard_live = st.tabs([
+            "📈 Plan & Backtest", # [BARU v3.6]
             "✍️ Input Trade (Log)", 
-            "🔬 Backtest Review", # [BARU v3.5]
+            "🔬 Backtest Review", 
             "📊 Dashboard (Review)"
         ])
 
         # ----------------------------------------------------
-        # TAB 1: KALKULATOR RRR & LIQ. PRICE
+        # TAB 1: PLAN & BACKTEST (GABUNGAN)
         # ----------------------------------------------------
-        with tab_kalkulator:
-            st.header("Perencana Posisi (RRR & Estimasi Likuidasi)")
-            st.markdown("Gunakan ini **SEBELUM** Anda menekan tombol *buy/sell* di *exchange*.")
+        with tab_plan_and_backtest:
+            st.header("1. Plan & Eksekusi Backtest")
+            st.markdown("Gunakan form ini untuk merencanakan (kalkulasi) DAN mengeksekusi (menyimpan) backtest.")
             
-            with st.form(key="calculator_form", clear_on_submit=False):
-                col_calc_input_1, col_calc_input_2 = st.columns(2)
-                
-                with col_calc_input_1:
-                    st.subheader("Data Rencana")
-                    calc_direction = st.selectbox("Direction*", ["LONG", "SHORT"], key="calc_dir")
-                    calc_entry = st.number_input("Entry Price*", value=0.0, help="Harga Anda berencana masuk", format="%.2f")
-                    calc_sl = st.number_input("Stop Loss*", value=0.0, help="Harga cut loss Anda", format="%.2f")
-                    calc_tp = st.number_input("Take Profit*", value=0.0, help="Harga target profit Anda", format="%.2f")
-                
-                with col_calc_input_2:
-                    st.subheader("Data Margin & Posisi")
-                    calc_size_usdt = st.number_input("Position Size (USDT)*", value=0.0, help="Total nilai posisi (Value), BUKAN margin.", format="%.2f")
-                    calc_margin_type = st.selectbox("Margin Type*", ["Isolated", "Cross"], help="Pilih mode margin Anda.")
-                    
-                    if calc_margin_type == 'Isolated':
-                        calc_leverage = st.number_input("Leverage (x)*", min_value=1, step=1, value=20, help="Leverage untuk mode Isolated.")
-                    else: 
-                        calc_equity = st.number_input("Total Equity (Wallet)*", value=0.0, help="Total ekuitas di dompet futures Anda.", format="%.2f")
-                
-                calculate_button = st.form_submit_button(label="Hitung Risk/Reward & Estimasi Likuidasi")
-
-            if calculate_button:
-                st.divider()
-                st.subheader("Hasil Perhitungan Rencana:")
-                
-                valid_prices = all([calc_entry > 0, calc_sl > 0, calc_tp > 0, calc_size_usdt > 0])
-                valid_margin = True
-                if calc_margin_type == 'Isolated':
-                    if calc_leverage <= 0:
-                        valid_margin = False
-                else: 
-                    if calc_equity <= 0:
-                        valid_margin = False
-
-                if not valid_prices or not valid_margin:
-                    st.error("❌ Semua field (*) wajib diisi dan tidak boleh nol (0).")
-                
-                elif calc_direction == "LONG" and (calc_entry < calc_sl or calc_entry > calc_tp):
-                    st.error("❌ Untuk LONG: SL harus < Entry, dan TP harus > Entry.")
-                elif calc_direction == "SHORT" and (calc_entry > calc_sl or calc_entry < calc_tp):
-                    st.error("❌ Untuk SHORT: SL harus > Entry, dan TP harus < Entry.")
-                else:
-                    qty_koin = calc_size_usdt / calc_entry if calc_entry != 0 else 0
-                    
-                    if calc_direction == "LONG":
-                        risk_per_koin = calc_entry - calc_sl
-                        reward_per_koin = calc_tp - calc_entry
-                    else: 
-                        risk_per_koin = calc_sl - calc_entry
-                        reward_per_koin = calc_entry - calc_tp
-                        
-                    risk_dolar = risk_per_koin * qty_koin
-                    reward_dolar = reward_per_koin * qty_koin
-                    rrr = np.divide(reward_dolar, risk_dolar) if risk_dolar != 0 else 0 
-                    
-                    liq_price = 0.0
-                    if calc_margin_type == 'Isolated':
-                        margin_isolated = calc_size_usdt / calc_leverage if calc_leverage != 0 else 0
-                        if qty_koin != 0: 
-                            if calc_direction == 'LONG':
-                                liq_price = calc_entry - (margin_isolated / qty_koin)
-                            else: 
-                                liq_price = calc_entry + (margin_isolated / qty_koin)
-                    else: 
-                        if qty_koin != 0: 
-                            if calc_direction == 'LONG':
-                                liq_price = calc_entry - (calc_equity / qty_koin)
-                            else: 
-                                liq_price = calc_entry + (calc_equity / qty_koin)
-                    
-                    st.info(f"**Kuantitas Koin:** `{qty_koin:.8f}` (dihitung dari Size / Entry)")
-                    
-                    col_risk, col_reward, col_rrr = st.columns(3)
-                    col_risk.metric("POTENSI RISK", f"${risk_dolar:,.2f}", "Jika kena SL")
-                    col_reward.metric("POTENSI REWARD", f"${reward_dolar:,.2f}", "Jika kena TP")
-                    col_rrr.metric("Risk/Reward Ratio (RRR)", f"1 : {rrr:.2f}")
-                    
-                    st.divider()
-                    
-                    st.metric(
-                        label=f"ESTIMASI LIQ. PRICE ({calc_margin_type})", 
-                        value=f"${liq_price:,.8f}"
-                    )
-                    st.warning("`Perhatian:` Estimasi Liq. Price **TIDAK** termasuk *maintenance margin*, *fees*, atau *funding rates*. Harga likuidasi di exchange mungkin sedikit berbeda.")
-
-                    if rrr < 2.0:
-                        st.warning(f"**PERHATIAN:** RRR (1:{rrr:.2f}) di bawah standar profesional (1:2). Trade ini mungkin tidak layak diambil.")
-                    else:
-                        st.success(f"**GO!** RRR (1:{rrr:.2f}) memenuhi standar. Jika setup Anda valid (A/B), trade ini layak dieksekusi.")
-
-
-        # ----------------------------------------------------
-        # TAB 2: BACKTEST (Execute)
-        # ----------------------------------------------------
-        with tab_backtest_execute:
-            st.header("Catatan Backtest Strategi")
-            st.markdown("Uji strategi Anda di sini. Input setup, lalu update saat 'ditutup'.")
-            
-            if st.button("Refresh Data Backtest"):
-                st.cache_data.clear()
-                st.success("Cache data backtest di-clear!")
-                st.rerun()
-            
-            st.subheader("1. Input Setup Backtest Baru")
-            with st.form(key="backtest_form", clear_on_submit=True):
+            with st.form(key="plan_and_backtest_form", clear_on_submit=False):
                 col_bt_1, col_bt_2, col_bt_3 = st.columns(3)
                 
                 with col_bt_1:
+                    st.subheader("Data Setup")
                     bt_setup_uniq = st.text_input("Setup Uniq*", help="Beri nama unik, e.g., 'BTC 1H Breakout #1'")
                     bt_pairs = st.text_input("Pairs*", help="e.g., BTC/USDT")
                     bt_direction = st.selectbox("Direction*", ["LONG", "SHORT"], key="bt_dir")
-                
-                with col_bt_2:
                     bt_strategy = st.text_input("Strategy*", help="e.g., Break & Retest")
                     bt_timeframe = st.selectbox("Timeframe*", ["1m", "5m", "15m", "30m", "1H", "4H", "1D"], key="bt_tf")
+                
+                with col_bt_2:
+                    st.subheader("Data Posisi")
+                    bt_entry = st.number_input("Entry Price*", value=0.0, format="%.2f")
+                    bt_sl = st.number_input("Stop Loss*", value=0.0, format="%.2f")
+                    bt_tp = st.number_input("Take Profit*", value=0.0, format="%.2f")
                     bt_position_size = st.number_input("Position Size (USDT)*", value=100.0, help="Total nilai posisi, BUKAN margin", format="%.2f")
                     bt_leverage = st.number_input("Leverage (x)*", min_value=1, step=1, value=20)
 
                 with col_bt_3:
-                    bt_entry = st.number_input("Entry Price*", value=0.0, format="%.2f")
-                    bt_sl = st.number_input("Stop Loss*", value=0.0, format="%.2f")
-                    bt_tp = st.number_input("Take Profit*", value=0.0, format="%.2f")
+                    st.subheader("Data Kalkulator Likuidasi")
+                    bt_margin_type = st.selectbox("Margin Type*", ["Isolated", "Cross"], help="Pilih mode margin Anda.", key="bt_margin_type")
+                    
+                    if bt_margin_type == 'Isolated':
+                        st.info("Leverage (x) sudah diisi di 'Data Posisi'.")
+                        bt_equity = 0.0 # Tidak dipakai
+                    else: 
+                        bt_equity = st.number_input("Total Equity (Wallet)*", value=1000.0, help="Total ekuitas di dompet futures Anda.", format="%.2f", key="bt_equity")
                 
-                submit_backtest_button = st.form_submit_button("Simpan Setup Backtest (Status: Open)")
+                st.divider()
                 
-                if submit_backtest_button:
-                    if not all([bt_setup_uniq, bt_pairs, bt_strategy, bt_entry > 0, bt_sl > 0, bt_tp > 0, bt_position_size > 0, bt_leverage > 0]):
-                        st.error("❌ Semua field (*) wajib diisi dan harga/size/leverage tidak boleh nol (0).")
-                    else:
-                        with st.spinner("Menyimpan setup backtest..."):
-                            jakarta_tz = pytz.timezone('Asia/Jakarta')
-                            timestamp = datetime.now(jakarta_tz).strftime("%Y-%m-%d %H:%M:%S")
+                # --- [BARU v3.6] Dua Tombol Aksi ---
+                col_btn_1, col_btn_2 = st.columns(2)
+                with col_btn_1:
+                    calculate_button = st.form_submit_button("Hanya Hitung RRR & Liq. Price")
+                
+                with col_btn_2:
+                    submit_backtest_button = st.form_submit_button("✅ Simpan ke Backtest (Status: Open)")
+
+            # --- Logika setelah form di-submit ---
+            
+            # Cek validasi dasar (harus diisi semua)
+            # [UPDATE v3.6] Validasi gabungan
+            is_valid_required = all([bt_setup_uniq, bt_pairs, bt_strategy, bt_entry > 0, bt_sl > 0, bt_tp > 0, bt_position_size > 0, bt_leverage > 0])
+            is_valid_liq = (bt_margin_type == 'Isolated') or (bt_margin_type == 'Cross' and bt_equity > 0)
+            
+            # 1. Jika Tombol "Hanya Hitung" ditekan
+            if calculate_button:
+                if not is_valid_required or not is_valid_liq:
+                    st.error("❌ Semua field (*) wajib diisi dan tidak boleh nol (0). Cek kembali input Anda.")
+                elif bt_direction == "LONG" and (bt_entry < bt_sl or bt_entry > bt_tp):
+                    st.error("❌ Untuk LONG: SL harus < Entry, dan TP harus > Entry.")
+                elif bt_direction == "SHORT" and (bt_entry > bt_sl or bt_entry < bt_tp):
+                    st.error("❌ Untuk SHORT: SL harus > Entry, dan TP harus < Entry.")
+                else:
+                    # --- Lakukan Kalkulasi (tanpa simpan) ---
+                    with st.spinner("Menghitung RRR & Likuidasi..."):
+                        qty_koin = bt_position_size / bt_entry
+                        
+                        if bt_direction == "LONG":
+                            risk_per_koin = bt_entry - bt_sl
+                            reward_per_koin = bt_tp - bt_entry
+                        else: 
+                            risk_per_koin = bt_sl - bt_entry
+                            reward_per_koin = bt_entry - bt_tp
                             
-                            new_row = [
-                                timestamp, bt_setup_uniq, bt_pairs, bt_direction, bt_strategy, bt_timeframe,
-                                bt_entry, bt_sl, bt_tp, bt_position_size, bt_leverage, "Open",
-                                "", "", "", "" # Exit Price, PNL (USDT), PNL (%), Notes (kosong)
-                            ]
-                            
-                            backtest_worksheet.append_row(new_row)
-                            st.cache_data.clear() 
-                            st.success(f"✅ Setup '{bt_setup_uniq}' berhasil disimpan (Status: Open).")
-                            st.rerun()
+                        risk_dolar = risk_per_koin * qty_koin
+                        reward_dolar = reward_per_koin * qty_koin
+                        rrr = np.divide(reward_dolar, risk_dolar) if risk_dolar != 0 else 0 
+                        
+                        liq_price = 0.0
+                        if bt_margin_type == 'Isolated':
+                            margin_isolated = bt_position_size / bt_leverage
+                            if qty_koin != 0: 
+                                liq_price = bt_entry - (margin_isolated / qty_koin) if bt_direction == 'LONG' else bt_entry + (margin_isolated / qty_koin)
+                        else: # Cross
+                            if qty_koin != 0: 
+                                liq_price = bt_entry - (bt_equity / qty_koin) if bt_direction == 'LONG' else bt_entry + (bt_equity / qty_koin)
+                        
+                        st.subheader(f"Hasil Kalkulasi untuk: {bt_setup_uniq}")
+                        st.info(f"**Kuantitas Koin:** `{qty_koin:.8f}` (dihitung dari Size / Entry)")
+                        
+                        col_risk, col_reward, col_rrr = st.columns(3)
+                        col_risk.metric("POTENSI RISK", f"${risk_dolar:,.2f}", "Jika kena SL")
+                        col_reward.metric("POTENSI REWARD", f"${reward_dolar:,.2f}", "Jika kena TP")
+                        col_rrr.metric("Risk/Reward Ratio (RRR)", f"1 : {rrr:.2f}")
+                        
+                        st.divider()
+                        st.metric(label=f"ESTIMASI LIQ. PRICE ({bt_margin_type})", value=f"${liq_price:,.8f}")
+                        st.warning("`Perhatian:` Estimasi Liq. Price **TIDAK** termasuk *fees* atau *funding rates*.")
+
+                        if rrr < 2.0:
+                            st.warning(f"**RRR RENDAH (1:{rrr:.2f})**: Trade ini mungkin tidak layak dieksekusi.")
+                        else:
+                            st.success(f"**RRR BAIK (1:{rrr:.2f})**: Setup ini layak disimpan ke backtest.")
+            
+            # 2. Jika Tombol "Simpan ke Backtest" ditekan
+            if submit_backtest_button:
+                if not is_valid_required: # Cukup validasi dasar, tak perlu validasi likuidasi
+                    st.error("❌ Semua field (*) wajib diisi dan harga/size/leverage tidak boleh nol (0).")
+                elif bt_direction == "LONG" and (bt_entry < bt_sl or bt_entry > bt_tp):
+                    st.error("❌ Untuk LONG: SL harus < Entry, dan TP harus > Entry.")
+                elif bt_direction == "SHORT" and (bt_entry > bt_sl or bt_entry < bt_tp):
+                    st.error("❌ Untuk SHORT: SL harus > Entry, dan TP harus < Entry.")
+                else:
+                    with st.spinner(f"Menyimpan setup '{bt_setup_uniq}' ke GSheet..."):
+                        jakarta_tz = pytz.timezone('Asia/Jakarta')
+                        timestamp = datetime.now(jakarta_tz).strftime("%Y-%m-%d %H:%M:%S")
+                        
+                        new_row = [
+                            timestamp, bt_setup_uniq, bt_pairs, bt_direction, bt_strategy, bt_timeframe,
+                            bt_entry, bt_sl, bt_tp, bt_position_size, bt_leverage, "Open",
+                            "", "", "", "" # Exit Price, PNL (USDT), PNL (%), Notes (kosong)
+                        ]
+                        
+                        backtest_worksheet.append_row(new_row)
+                        st.cache_data.clear() 
+                        st.success(f"✅ Setup '{bt_setup_uniq}' berhasil disimpan (Status: Open).")
+                        st.rerun()
 
             st.divider()
             
             # --- Dashboard Update Backtest ---
-            st.subheader("2. Dashboard & Update Posisi Terbuka")
+            st.header("2. Dashboard & Update Posisi Terbuka")
             
             with st.spinner("Memuat data backtest..."):
                 df_bt_raw_for_closing = get_data_as_dataframe(backtest_worksheet, BACKTEST_COLUMN_NAMES)
@@ -391,12 +365,13 @@ try:
                                             st.error(f"Gagal update GSheet: {e}")
                                             st.error("Pastikan tidak ada orang lain yg sedang mengedit GSheet bersamaan.")
 
+
         # ----------------------------------------------------
-        # TAB 3: INPUT TRADE
+        # TAB 3: INPUT TRADE (LIVE)
         # ----------------------------------------------------
         with tab_input_live:
             st.header("Catat Trade Baru (Live Trade)")
-            st.markdown("Input harga fleksibel. PNL & RRR otomatis.")
+            st.markdown("Hanya catat trade yang sudah dieksekusi di *exchange*.")
             
             with st.form(key="trade_form", clear_on_submit=True):
                 col_input_1, col_input_2, col_input_3 = st.columns(3)
@@ -466,20 +441,19 @@ try:
 
 
         # ----------------------------------------------------
-        # [BARU v3.5] TAB 4: BACKTEST REVIEW
+        # TAB 4: BACKTEST REVIEW
         # ----------------------------------------------------
         with tab_backtest_review:
             st.header("Dashboard Review Performa Backtest")
             st.markdown("Validasi strategi Anda di sini. Apakah Win Rate & Profit Factor-nya sudah layak?")
             
-            if st.button("Refresh Data Review Backtest"):
+            if st.button("Refresh Data Review Backtest", key="refresh_bt_review"):
                 st.cache_data.clear()
                 st.success("Cache data backtest di-clear!")
                 st.rerun()
             
             with st.spinner("Memuat dan memproses data backtest..."):
                 df_bt_raw = get_data_as_dataframe(backtest_worksheet, BACKTEST_COLUMN_NAMES)
-                # Ambil hanya data yang sudah ditutup
                 df_bt_closed = df_bt_raw[df_bt_raw["Status"] == "Closed"].copy()
             
             if df_bt_closed.empty:
@@ -570,7 +544,7 @@ try:
             st.header("Dashboard Performa Trading (Live)")
             st.markdown("Review ini setiap akhir pekan. Data adalah guru terbaik.")
             
-            if st.button("Refresh Data Jurnal"):
+            if st.button("Refresh Data Jurnal", key="refresh_live_review"):
                 st.cache_data.clear()
                 st.success("Cache data jurnal di-clear!")
                 st.rerun()
