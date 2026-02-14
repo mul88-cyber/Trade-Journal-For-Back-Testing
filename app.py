@@ -318,17 +318,6 @@ COLUMNS = [
     "Possition", "Change %", "P&L", "Change % (Custom)", "P&L (Custom)"
 ]
 
-@st.cache_resource(ttl=300)
-def get_gsheet_client():
-    try:
-        # PERBAIKAN 1: Metode otentikasi baru untuk Streamlit Cloud agar tidak error "_auth_request"
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        client = gspread.service_account_from_dict(creds_dict)
-        return client
-    except Exception as e:
-        st.error(f"🔴 Gagal koneksi ke Google Sheets: {str(e)}")
-        return None
-
 @st.cache_data(ttl=30)
 def load_data(_client):
     try:
