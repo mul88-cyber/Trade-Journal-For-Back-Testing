@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials
 import numpy as np
 
 # -----------------------------------------------------------------
-# KONFIGURASI HALAMAN & UI CUSTOM (PREMIUM DEEP THEME dengan GLASSMORPHISM)
+# KONFIGURASI HALAMAN & UI CUSTOM (FLAT DARK CORPORATE THEME)
 # -----------------------------------------------------------------
 st.set_page_config(
     page_title="AlphaStock Professional", 
@@ -17,650 +17,193 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Premium Custom CSS dengan Deep Theme & Glassmorphism
+# Flat Custom CSS (Berdasarkan referensi gambar)
 st.markdown("""
     <style>
-    /* ===== MAIN BACKGROUND DEEP PREMIUM ===== */
+    /* ===== MAIN BACKGROUND ===== */
     .stApp {
-        background: linear-gradient(135deg, #0B1120 0%, #1A1F35 50%, #0F172A 100%);
-        color: #E2E8F0;
+        background-color: #1a1e2f; /* Solid dark navy background */
+        color: #ffffff;
     }
     
-    /* ===== GLASSMORPHISM CARDS ===== */
-    div[data-testid="stVerticalBlock"] > div {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 24px;
-        padding: 24px;
-        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    div[data-testid="stVerticalBlock"] > div:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    /* Main container */
-    .main > div {
-        background: transparent;
-    }
-    
-    /* Block container */
-    .st-emotion-cache-1r6slb0, .st-emotion-cache-12w0qpk {
-        background: rgba(30, 41, 59, 0.4) !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.03);
-        border-radius: 24px;
-        padding: 24px;
-        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* ===== PREMIUM TYPOGRAPHY ===== */
-    h1, h2, h3 {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        margin-bottom: 1rem !important;
-    }
-    
-    h1 {
-        font-size: 2.8rem !important;
-        background: linear-gradient(135deg, #818CF8 0%, #C084FC 30%, #F472B6 70%, #38BDF8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 30px rgba(129, 140, 248, 0.3);
-    }
-    
-    h2 {
-        font-size: 2.2rem !important;
-        background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 50%, #F472B6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    
-    h3 {
-        font-size: 1.5rem !important;
-        color: #F0F9FF !important;
-        text-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
-    }
-    
-    /* Regular text */
-    p, li, .stMarkdown, .stText, span:not([class*="css"]) {
-        color: #CBD5E1 !important;
-        line-height: 1.6;
-    }
-    
-    /* ===== PREMIUM METRIC CARDS ===== */
-    div[data-testid="metric-container"] {
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.1)) !important;
-        border: 1px solid rgba(96, 165, 250, 0.15) !important;
-        border-radius: 20px !important;
-        padding: 24px !important;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    div[data-testid="metric-container"]::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-        transition: left 0.5s ease;
-    }
-    
-    div[data-testid="metric-container"]:hover::before {
-        left: 100%;
-    }
-    
-    div[data-testid="metric-container"]:hover {
-        transform: translateY(-5px);
-        border-color: rgba(96, 165, 250, 0.4) !important;
-        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Metric label */
-    div[data-testid="metric-container"] label {
-        color: #94A3B8 !important;
-        font-size: 0.9rem !important;
-        font-weight: 500 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-    }
-    
-    /* Metric value */
-    div[data-testid="metric-container"] div {
-        background: linear-gradient(135deg, #F0F9FF 0%, #E2E8F0 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 2rem !important;
-        font-weight: 700 !important;
-        line-height: 1.2 !important;
-    }
-    
-    /* Metric delta positive */
-    div[data-testid="metric-container"] [data-testid="stMetricDelta"] [data-testid="stArrowUp"] {
-        color: #10B981 !important;
-    }
-    
-    /* Metric delta negative */
-    div[data-testid="metric-container"] [data-testid="stMetricDelta"] [data-testid="stArrowDown"] {
-        color: #EF4444 !important;
-    }
-    
-    /* ===== PREMIUM TABS ===== */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 6px;
-        background: rgba(15, 23, 42, 0.6);
-        padding: 6px;
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        margin-bottom: 30px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        border-radius: 12px;
-        padding: 10px 20px;
-        color: #94A3B8;
-        font-weight: 600;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-        border: 1px solid transparent;
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        color: #F0F9FF;
-        background: rgba(255, 255, 255, 0.02);
-        border-color: rgba(255, 255, 255, 0.05);
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6) !important;
-        color: white !important;
-        box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    /* ===== PREMIUM BUTTONS ===== */
-    .stButton>button {
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-        color: white;
-        border: none;
-        border-radius: 14px;
-        padding: 12px 24px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 10px 20px -10px #3B82F6;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stButton>button::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s ease;
-    }
-    
-    .stButton>button:hover::before {
-        left: 100%;
-    }
-    
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 30px -10px #3B82F6;
-    }
-    
-    /* Secondary button */
-    .stButton>button[kind="secondary"] {
-        background: rgba(255, 255, 255, 0.03);
-        color: #F0F9FF;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: none;
-    }
-    
-    .stButton>button[kind="secondary"]:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: #3B82F6;
-    }
-    
-    /* ===== PREMIUM INPUT FIELDS ===== */
-    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
-        background: rgba(30, 41, 59, 0.5) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 14px !important;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-    }
-    
-    div[data-baseweb="input"]:hover, div[data-baseweb="select"]:hover {
-        border-color: #3B82F6 !important;
-        background: rgba(30, 41, 59, 0.7) !important;
-    }
-    
-    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within {
-        border-color: #8B5CF6 !important;
-        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2) !important;
-    }
-    
-    /* Input text */
-    input, select, textarea {
-        color: #F0F9FF !important;
-        font-size: 1rem !important;
-        padding: 12px 16px !important;
-        background: transparent !important;
-    }
-    
-    /* Input label */
-    .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {
-        color: #94A3B8 !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
-        margin-bottom: 6px !important;
-    }
-    
-    /* Placeholder */
-    input::placeholder, textarea::placeholder {
-        color: #475569 !important;
-        font-size: 0.95rem !important;
-    }
-    
-    /* ===== PREMIUM DATAFRAME dengan COLOR SCALE ===== */
-    .stDataFrame {
-        background: rgba(15, 23, 42, 0.4);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.03);
-        overflow: hidden;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-    }
-    
-    .stDataFrame [data-testid="stDataFrame"] {
-        border: none;
-    }
-    
-    /* Table styling */
-    .stDataFrame table {
-        border-collapse: separate;
-        border-spacing: 0;
-        width: 100%;
-    }
-    
-    /* Table header */
-    .stDataFrame th {
-        background: rgba(59, 130, 246, 0.2) !important;
-        color: #F0F9FF !important;
-        font-weight: 700 !important;
-        font-size: 0.85rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 16px !important;
-        border-bottom: 2px solid rgba(59, 130, 246, 0.3) !important;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-    }
-    
-    /* Table cells */
-    .stDataFrame td {
-        color: #CBD5E1 !important;
-        padding: 14px 16px !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
-        transition: background-color 0.2s ease;
-    }
-    
-    /* Hover effect */
-    .stDataFrame tr:hover td {
-        background: rgba(59, 130, 246, 0.1) !important;
-    }
-    
-    /* Color scale untuk kolom numerik */
-    /* P&L Positive - Hijau gradient */
-    .stDataFrame td:nth-child(11), /* P&L column */
-    .stDataFrame td:nth-child(13) { /* P&L Custom column */
-        background: linear-gradient(90deg, 
-            rgba(16, 185, 129, 0.1) 0%, 
-            rgba(16, 185, 129, 0.2) 50%, 
-            rgba(16, 185, 129, 0.1) 100%);
-        font-weight: 600;
-    }
-    
-    /* P&L based coloring - ini akan di-handle oleh Streamlit secara dinamis */
-    
-    /* Change % column */
-    .stDataFrame td:nth-child(10), /* Change % */
-    .stDataFrame td:nth-child(12) { /* Change % Custom */
-        font-weight: 600;
-    }
-    
-    /* Price columns */
-    .stDataFrame td:nth-child(3), /* Price Buy */
-    .stDataFrame td:nth-child(6), /* Current Price */
-    .stDataFrame td:nth-child(8) { /* Custom Price */
-        color: #FCD34D !important;
-        font-weight: 500;
-    }
-    
-    /* ===== CUSTOM COLOR SCALE DENGAN JAVASCRIPT ===== */
-    </style>
-    
-    <script>
-    // JavaScript untuk menambahkan color scale pada tabel
-    function addColorScale() {
-        const tables = document.querySelectorAll('.stDataFrame table');
-        tables.forEach(table => {
-            // Cek apakah sudah diproses
-            if (table.classList.contains('color-scale-processed')) return;
-            table.classList.add('color-scale-processed');
-            
-            // Proses setiap baris
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                
-                // Color scale untuk P&L (kolom ke-11)
-                if (cells.length >= 11) {
-                    const pnlCell = cells[10]; // P&L column
-                    const pnlValue = parseFloat(pnlCell.textContent.replace(/[^0-9-]/g, ''));
-                    
-                    if (!isNaN(pnlValue)) {
-                        if (pnlValue > 0) {
-                            // Hijau untuk positif
-                            const intensity = Math.min(pnlValue / 1000000, 0.3);
-                            pnlCell.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${intensity}), rgba(16, 185, 129, ${intensity * 0.5}))`;
-                            pnlCell.style.color = '#A7F3D0';
-                        } else if (pnlValue < 0) {
-                            // Merah untuk negatif
-                            const intensity = Math.min(Math.abs(pnlValue) / 1000000, 0.3);
-                            pnlCell.style.background = `linear-gradient(90deg, rgba(239, 68, 68, ${intensity}), rgba(239, 68, 68, ${intensity * 0.5}))`;
-                            pnlCell.style.color = '#FECACA';
-                        }
-                    }
-                }
-                
-                // Color scale untuk Change % (kolom ke-10)
-                if (cells.length >= 10) {
-                    const changeCell = cells[9]; // Change % column
-                    const changeValue = parseFloat(changeCell.textContent.replace(/[^0-9.-]/g, ''));
-                    
-                    if (!isNaN(changeValue)) {
-                        if (changeValue > 0) {
-                            const intensity = Math.min(changeValue / 10, 0.3);
-                            changeCell.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${intensity}), rgba(16, 185, 129, ${intensity * 0.5}))`;
-                            changeCell.style.color = '#A7F3D0';
-                        } else if (changeValue < 0) {
-                            const intensity = Math.min(Math.abs(changeValue) / 10, 0.3);
-                            changeCell.style.background = `linear-gradient(90deg, rgba(239, 68, 68, ${intensity}), rgba(239, 68, 68, ${intensity * 0.5}))`;
-                            changeCell.style.color = '#FECACA';
-                        }
-                    }
-                }
-            });
-        });
-    }
-    
-    // Jalankan saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', addColorScale);
-    
-    // Jalankan juga saat ada perubahan
-    const observer = new MutationObserver(addColorScale);
-    observer.observe(document.body, { childList: true, subtree: true });
-    </script>
-    
-    <style>
-    /* ===== ALERT MESSAGES PREMIUM ===== */
-    .stAlert {
-        background: rgba(15, 23, 42, 0.8) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 16px !important;
-        padding: 20px !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-    }
-    
-    /* Success */
-    .stAlert.success {
-        border-left: 4px solid #10B981 !important;
-    }
-    
-    .stAlert.success p {
-        color: #D1FAE5 !important;
-    }
-    
-    /* Error */
-    .stAlert.error {
-        border-left: 4px solid #EF4444 !important;
-    }
-    
-    .stAlert.error p {
-        color: #FEE2E2 !important;
-    }
-    
-    /* Warning */
-    .stAlert.warning {
-        border-left: 4px solid #F59E0B !important;
-    }
-    
-    .stAlert.warning p {
-        color: #FEF3C7 !important;
-    }
-    
-    /* Info */
-    .stAlert.info {
-        border-left: 4px solid #3B82F6 !important;
-    }
-    
-    .stAlert.info p {
-        color: #DBEAFE !important;
-    }
-    
-    /* ===== SIDEBAR PREMIUM ===== */
+    /* ===== SIDEBAR ===== */
     section[data-testid="stSidebar"] {
-        background: rgba(15, 23, 42, 0.8) !important;
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(255, 255, 255, 0.03);
+        background-color: #121521 !important; /* Sidebar lebih gelap */
+        border-right: 1px solid #2d3748 !important;
     }
-    
     section[data-testid="stSidebar"] > div {
-        background: transparent !important;
-        padding: 24px 16px;
+        background-color: transparent !important;
     }
-    
-    /* Sidebar text */
-    section[data-testid="stSidebar"] .stMarkdown p {
-        color: #CBD5E1 !important;
-    }
-    
-    section[data-testid="stSidebar"] .stMarkdown h1,
-    section[data-testid="stSidebar"] .stMarkdown h2,
-    section[data-testid="stSidebar"] .stMarkdown h3 {
-        background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    
-    /* ===== DIVIDER ===== */
-    hr {
-        background: linear-gradient(90deg, transparent, #3B82F6, #8B5CF6, #3B82F6, transparent) !important;
-        height: 2px !important;
+
+    /* ===== CARDS & CONTAINERS ===== */
+    div[data-testid="stVerticalBlock"] > div {
+        background-color: transparent !important;
         border: none !important;
-        margin: 30px 0 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        animation: none !important;
+        transform: none !important;
     }
-    
-    /* ===== EXPANDER ===== */
-    .streamlit-expanderHeader {
-        background: rgba(59, 130, 246, 0.1) !important;
-        color: #F0F9FF !important;
+    div[data-testid="stVerticalBlock"] > div:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Inter', -apple-system, sans-serif !important;
+        color: #ffffff !important;
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
+        text-shadow: none !important;
         font-weight: 600 !important;
-        border: 1px solid rgba(59, 130, 246, 0.2) !important;
-        border-radius: 14px !important;
-        padding: 14px 18px !important;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        letter-spacing: normal !important;
     }
     
-    .streamlit-expanderHeader:hover {
-        background: rgba(59, 130, 246, 0.15) !important;
+    p, li, .stMarkdown, .stText, span:not([class*="css"]), label {
+        color: #cbd5e1 !important;
     }
-    
-    .streamlit-expanderContent {
-        background: rgba(15, 23, 42, 0.4) !important;
-        border: 1px solid rgba(255, 255, 255, 0.03) !important;
-        border-top: none !important;
-        border-radius: 0 0 14px 14px !important;
+
+    /* ===== METRIC CARDS ===== */
+    div[data-testid="metric-container"] {
+        background-color: #202639 !important; /* Panel color from image */
+        border: 1px solid #323b54 !important;
+        border-radius: 8px !important;
         padding: 20px !important;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+        transform: none !important;
+        animation: none !important;
     }
-    
-    /* ===== CHECKBOX & RADIO ===== */
-    .stCheckbox label {
-        color: #CBD5E1 !important;
+    div[data-testid="metric-container"]::before {
+        display: none !important;
     }
-    
-    .stCheckbox div[data-baseweb="checkbox"] {
-        border-color: #475569 !important;
-        background: rgba(30, 41, 59, 0.5) !important;
+    div[data-testid="metric-container"]:hover {
+        transform: none !important;
+        border-color: #4a5568 !important;
+        box-shadow: none !important;
     }
-    
-    .stCheckbox div[data-baseweb="checkbox"]:checked {
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6) !important;
-        border-color: transparent !important;
+    div[data-testid="metric-container"] div {
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
+        color: #ffffff !important;
     }
-    
-    /* ===== PROGRESS BAR ===== */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #3B82F6, #8B5CF6, #F472B6) !important;
+
+    /* ===== TABS (FLAT STYLE) ===== */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: transparent !important;
+        border-bottom: 1px solid #323b54 !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        gap: 20px !important;
+        backdrop-filter: none !important;
     }
-    
-    /* ===== SPINNER ===== */
-    .stSpinner > div {
-        border-color: #3B82F6 transparent #8B5CF6 transparent !important;
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent !important;
+        color: #94a3b8 !important;
+        border: none !important;
+        border-bottom: 2px solid transparent !important;
+        border-radius: 0 !important;
+        padding: 10px 4px !important;
     }
-    
-    /* ===== SCROLLBAR PREMIUM ===== */
-    ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #ffffff !important;
+        background-color: transparent !important;
     }
-    
-    ::-webkit-scrollbar-track {
-        background: rgba(15, 23, 42, 0.5);
-        border-radius: 5px;
+    .stTabs [aria-selected="true"] {
+        background: transparent !important;
+        color: #ffffff !important;
+        border-bottom: 2px solid #3b82f6 !important; /* Blue underline */
+        box-shadow: none !important;
     }
-    
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-        border-radius: 5px;
-        border: 2px solid rgba(15, 23, 42, 0.5);
+
+    /* ===== BUTTONS ===== */
+    .stButton>button {
+        background-color: transparent !important;
+        color: #ffffff !important;
+        border: 1px solid #4a5568 !important;
+        border-radius: 6px !important;
+        box-shadow: none !important;
+        font-weight: 500 !important;
     }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #60A5FA, #A78BFA);
+    .stButton>button::before {
+        display: none !important;
     }
-    
-    /* ===== MOBILE RESPONSIVENESS ===== */
-    @media (max-width: 768px) {
-        h1 {
-            font-size: 2rem !important;
-        }
-        
-        h2 {
-            font-size: 1.6rem !important;
-        }
-        
-        h3 {
-            font-size: 1.2rem !important;
-        }
-        
-        div[data-testid="metric-container"] {
-            padding: 16px !important;
-            margin-bottom: 12px !important;
-        }
-        
-        div[data-testid="metric-container"] div {
-            font-size: 1.6rem !important;
-        }
-        
-        .stTabs [data-baseweb="tab-list"] {
-            flex-wrap: wrap;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            padding: 8px 12px !important;
-            font-size: 0.8rem !important;
-            flex: 1 1 auto;
-        }
-        
-        .stButton>button {
-            padding: 10px 16px !important;
-            font-size: 0.9rem !important;
-        }
-        
-        /* Table horizontal scroll for mobile */
-        .stDataFrame {
-            overflow-x: auto;
-        }
-        
-        .stDataFrame table {
-            min-width: 800px;
-        }
-        
-        /* Stack columns on mobile */
-        div[data-testid="column"] {
-            width: 100% !important;
-            min-width: 100% !important;
-        }
+    .stButton>button:hover {
+        background-color: #2d3748 !important;
+        border-color: #718096 !important;
+        transform: none !important;
+        box-shadow: none !important;
     }
-    
-    /* ===== ANIMATIONS ===== */
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-5px); }
-        100% { transform: translateY(0px); }
+    .stButton>button[type="primary"], .stButton>button[kind="primary"] {
+        background-color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
     }
-    
-    @keyframes glow {
-        0% { box-shadow: 0 0 5px #3B82F6; }
-        50% { box-shadow: 0 0 20px #8B5CF6; }
-        100% { box-shadow: 0 0 5px #3B82F6; }
+
+    /* ===== INPUT FIELDS ===== */
+    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
+        background-color: #121521 !important;
+        border: 1px solid #323b54 !important;
+        border-radius: 6px !important;
+        backdrop-filter: none !important;
     }
-    
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within {
+        border-color: #3b82f6 !important;
+        box-shadow: none !important;
+    }
+    input, select, textarea {
+        color: #ffffff !important;
+        background-color: transparent !important;
+    }
+
+    /* ===== DATAFRAME ===== */
+    .stDataFrame {
+        background-color: #202639 !important;
+        border: 1px solid #323b54 !important;
+        border-radius: 8px !important;
+        backdrop-filter: none !important;
+    }
+    .stDataFrame th {
+        background-color: #1a1e2f !important;
+        color: #94a3b8 !important;
+        border-bottom: 1px solid #323b54 !important;
+        text-transform: none !important;
+        font-weight: 600 !important;
+        backdrop-filter: none !important;
+    }
+    .stDataFrame td {
+        background-color: #202639 !important;
+        border-bottom: 1px solid #323b54 !important;
+        color: #cbd5e1 !important;
+    }
+    .stDataFrame tr:hover td {
+        background-color: #2c344d !important;
+    }
+
+    /* ===== DIVIDER & EXPANDER ===== */
+    hr {
+        background: #323b54 !important;
+        height: 1px !important;
+        margin: 20px 0 !important;
+        border: none !important;
+    }
+    .streamlit-expanderHeader {
+        background: #202639 !important;
+        border: 1px solid #323b54 !important;
+        border-radius: 6px !important;
+    }
+    .streamlit-expanderContent {
+        background: #1a1e2f !important;
+        border: 1px solid #323b54 !important;
+        border-top: none !important;
+    }
+
+    /* Hapus Semua Animasi */
     .element-container, div[data-testid="stVerticalBlock"] > div {
-        animation: fadeIn 0.6s ease-out;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Glow effect for important elements */
-    div[data-testid="metric-container"]:first-child {
-        animation: glow 3s infinite;
+        animation: none !important;
     }
     </style>
-    """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------
 # SIDEBAR PREMIUM
