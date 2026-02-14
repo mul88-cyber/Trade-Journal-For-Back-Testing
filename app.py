@@ -5,6 +5,106 @@ import plotly.graph_objects as go
 from datetime import date, datetime
 import numpy as np
 
+# =========================================================================
+# MULTI-THEME SELECTOR (DILETAKKAN DI PALING ATAS)
+# =========================================================================
+
+# Inisialisasi theme di session state
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'Dark Korporat'
+
+# Fungsi ganti theme
+def change_theme(theme_name):
+    st.session_state.theme = theme_name
+    st.rerun()
+
+# Sidebar untuk pilih theme
+with st.sidebar:
+    st.markdown("## 🎨 CUSTOM THEME")
+    
+    theme_options = {
+        "🌙 Dark Korporat": {
+            "bg": "linear-gradient(135deg, #2C3E50 0%, #34495E 100%)",
+            "card_bg": "rgba(52, 73, 94, 0.3)",
+            "accent": "#3498DB",
+            "text": "#ECF0F1",
+            "text_secondary": "#BDC3C7",
+            "positive": "#2ECC71",
+            "negative": "#E74C3C",
+            "header_bg": "rgba(44, 62, 80, 0.7)"
+        },
+        "🌿 Green Forest": {
+            "bg": "linear-gradient(135deg, #1B4D3E 0%, #2E7D5E 100%)",
+            "card_bg": "rgba(46, 125, 94, 0.3)",
+            "accent": "#FFC107",
+            "text": "#F5F5F5",
+            "text_secondary": "#CCCCCC",
+            "positive": "#81C784",
+            "negative": "#E57373",
+            "header_bg": "rgba(27, 77, 62, 0.7)"
+        },
+        "💜 Royal Purple": {
+            "bg": "linear-gradient(135deg, #2A1B3D 0%, #44318D 100%)",
+            "card_bg": "rgba(68, 49, 141, 0.3)",
+            "accent": "#FFB347",
+            "text": "#F5F5F5",
+            "text_secondary": "#D1C4E9",
+            "positive": "#81C784",
+            "negative": "#E57373",
+            "header_bg": "rgba(42, 27, 61, 0.7)"
+        },
+        "☀️ Light Professional": {
+            "bg": "linear-gradient(135deg, #F5F7FA 0%, #E6ECF5 100%)",
+            "card_bg": "rgba(255, 255, 255, 0.7)",
+            "accent": "#3498DB",
+            "text": "#2C3E50",
+            "text_secondary": "#7F8C8D",
+            "positive": "#27AE60",
+            "negative": "#E74C3C",
+            "header_bg": "rgba(255, 255, 255, 0.8)"
+        },
+        "🌅 Sunset Orange": {
+            "bg": "linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)",
+            "card_bg": "rgba(255, 255, 255, 0.1)",
+            "accent": "#FFFFFF",
+            "text": "#FFFFFF",
+            "text_secondary": "#F0F0F0",
+            "positive": "#2ECC71",
+            "negative": "#C0392B",
+            "header_bg": "rgba(0, 0, 0, 0.2)"
+        }
+    }
+    
+    selected = st.selectbox(
+        "Pilih Theme",
+        list(theme_options.keys()),
+        index=list(theme_options.keys()).index(st.session_state.theme),
+        key="theme_selector"
+    )
+    
+    if selected != st.session_state.theme:
+        change_theme(selected)
+    
+    # Tampilkan warna yang aktif
+    current = theme_options[st.session_state.theme]
+    st.markdown(f"""
+    <div style="
+        background: {current['card_bg']};
+        padding: 10px;
+        border-radius: 10px;
+        border-left: 4px solid {current['accent']};
+        margin-top: 10px;
+    ">
+        <small>Active Theme:</small><br>
+        <span style="color: {current['accent']};">{st.session_state.theme}</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.divider()
+
+# Ambil theme yang aktif
+theme = theme_options[st.session_state.theme]
+
 # -----------------------------------------------------------------
 # KONFIGURASI HALAMAN
 # -----------------------------------------------------------------
@@ -16,26 +116,26 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# CSS KORPORAT & MOBILE FRIENDLY
+# CSS DINAMIS - BERUBAH SESUAI THEME
 # -----------------------------------------------------------------
-st.markdown("""
+st.markdown(f"""
     <style>
-    /* MAIN BACKGROUND - DARK ABU TUA KORPORAT */
-    .stApp {
-        background: linear-gradient(135deg, #2C3E50 0%, #34495E 50%, #2C3E50 100%);
-    }
+    /* MAIN BACKGROUND */
+    .stApp {{
+        background: {theme['bg']};
+    }}
     
     /* KONTENER UTAMA */
-    .block-container {
+    .block-container {{
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
         max-width: 1400px !important;
         margin: 0 auto !important;
-    }
+    }}
     
-    /* HEADER KORPORAT */
-    .premium-header {
-        background: rgba(44, 62, 80, 0.7);
+    /* HEADER */
+    .premium-header {{
+        background: {theme['header_bg']};
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -46,33 +146,33 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    }
+    }}
     
-    .header-title {
+    .header-title {{
         font-size: 1.8rem;
         font-weight: 700;
-        color: #ECF0F1;
+        color: {theme['text']};
         letter-spacing: -0.02em;
-    }
+    }}
     
-    .header-title span {
-        color: #3498DB;
+    .header-title span {{
+        color: {theme['accent']};
         font-weight: 300;
-    }
+    }}
     
-    .header-date {
-        color: #BDC3C7;
+    .header-date {{
+        color: {theme['text_secondary']};
         font-size: 0.9rem;
-        background: rgba(52, 73, 94, 0.5);
+        background: rgba(255,255,255,0.03);
         padding: 0.5rem 1rem;
         border-radius: 20px;
         border: 1px solid rgba(255,255,255,0.05);
-    }
+    }}
     
-    /* TABS KORPORAT */
-    .stTabs [data-baseweb="tab-list"] {
+    /* TABS */
+    .stTabs [data-baseweb="tab-list"] {{
         gap: 4px;
-        background: rgba(52, 73, 94, 0.5);
+        background: {theme['card_bg']};
         backdrop-filter: blur(10px);
         padding: 4px;
         border-radius: 40px;
@@ -80,108 +180,108 @@ st.markdown("""
         margin-bottom: 1.5rem;
         flex-wrap: nowrap;
         overflow-x: auto;
-    }
+    }}
     
-    .stTabs [data-baseweb="tab"] {
+    .stTabs [data-baseweb="tab"] {{
         background: transparent;
         border-radius: 30px;
         padding: 0.5rem 1.2rem !important;
-        color: #BDC3C7;
+        color: {theme['text_secondary']};
         font-weight: 500;
         font-size: 0.9rem !important;
         transition: all 0.3s ease;
         white-space: nowrap;
         border: 1px solid transparent;
-    }
+    }}
     
-    .stTabs [data-baseweb="tab"]:hover {
-        color: #ECF0F1;
+    .stTabs [data-baseweb="tab"]:hover {{
+        color: {theme['text']};
         background: rgba(255,255,255,0.02);
         border-color: rgba(255,255,255,0.05);
-    }
+    }}
     
-    .stTabs [aria-selected="true"] {
-        background: #3498DB !important;
+    .stTabs [aria-selected="true"] {{
+        background: {theme['accent']} !important;
         color: white !important;
-        box-shadow: 0 4px 10px rgba(52,152,219,0.3);
-    }
+        box-shadow: 0 4px 10px {theme['accent']}80;
+    }}
     
-    /* METRIC CARDS KORPORAT */
-    div[data-testid="metric-container"] {
-        background: rgba(52, 73, 94, 0.3) !important;
+    /* METRIC CARDS */
+    div[data-testid="metric-container"] {{
+        background: {theme['card_bg']} !important;
         border: 1px solid rgba(255,255,255,0.05) !important;
         border-radius: 16px !important;
         padding: 1rem !important;
         backdrop-filter: blur(8px);
         transition: all 0.3s ease;
-    }
+    }}
     
-    div[data-testid="metric-container"]:hover {
-        border-color: #3498DB !important;
-        background: rgba(52, 73, 94, 0.5) !important;
-    }
+    div[data-testid="metric-container"]:hover {{
+        border-color: {theme['accent']} !important;
+        background: {theme['card_bg']} !important;
+    }}
     
-    div[data-testid="metric-container"] label {
-        color: #95A5A6 !important;
+    div[data-testid="metric-container"] label {{
+        color: {theme['text_secondary']} !important;
         font-size: 0.75rem !important;
         font-weight: 500 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.05em !important;
-    }
+    }}
     
-    div[data-testid="metric-container"] div {
-        color: #ECF0F1 !important;
+    div[data-testid="metric-container"] div {{
+        color: {theme['text']} !important;
         font-size: 1.5rem !important;
         font-weight: 600 !important;
-    }
+    }}
     
-    /* DATAFRAME KORPORAT - TIDAK SILAU */
-    .stDataFrame {
-        background: rgba(44, 62, 80, 0.3);
+    /* DATAFRAME */
+    .stDataFrame {{
+        background: rgba(0,0,0,0.1);
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255,255,255,0.03);
         border-radius: 16px;
         overflow: hidden;
-    }
+    }}
     
-    .stDataFrame [data-testid="stDataFrame"] {
+    .stDataFrame [data-testid="stDataFrame"] {{
         background: transparent !important;
-    }
+    }}
     
-    .stDataFrame table {
+    .stDataFrame table {{
         border-collapse: separate;
         border-spacing: 0;
         width: 100%;
         background: transparent !important;
-    }
+    }}
     
-    .stDataFrame th {
-        background: rgba(52, 73, 94, 0.6) !important;
-        color: #ECF0F1 !important;
+    .stDataFrame th {{
+        background: {theme['card_bg']} !important;
+        color: {theme['text']} !important;
         font-weight: 600 !important;
         font-size: 0.8rem !important;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         padding: 0.8rem 1rem !important;
-        border-bottom: 2px solid #3498DB !important;
-    }
+        border-bottom: 2px solid {theme['accent']} !important;
+    }}
     
-    .stDataFrame td {
-        background: rgba(44, 62, 80, 0.2) !important;
-        color: #BDC3C7 !important;
+    .stDataFrame td {{
+        background: rgba(0,0,0,0.1) !important;
+        color: {theme['text_secondary']} !important;
         padding: 0.6rem 1rem !important;
         border-bottom: 1px solid rgba(255,255,255,0.02) !important;
         font-size: 0.9rem !important;
         transition: all 0.2s ease;
-    }
+    }}
     
-    .stDataFrame tr:hover td {
-        background: rgba(52, 73, 94, 0.4) !important;
-    }
+    .stDataFrame tr:hover td {{
+        background: {theme['card_bg']} !important;
+    }}
     
-    /* BUTTON KORPORAT */
-    .stButton>button {
-        background: #3498DB;
+    /* BUTTON */
+    .stButton>button {{
+        background: {theme['accent']};
         color: white;
         border: none;
         border-radius: 30px !important;
@@ -189,114 +289,181 @@ st.markdown("""
         font-weight: 500;
         font-size: 0.85rem !important;
         transition: all 0.3s ease;
-    }
+    }}
     
-    .stButton>button:hover {
-        background: #2980B9;
+    .stButton>button:hover {{
+        opacity: 0.9;
         transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(52,152,219,0.3);
-    }
+        box-shadow: 0 4px 10px {theme['accent']}80;
+    }}
     
-    /* INPUT FIELDS KORPORAT */
-    div[data-baseweb="input"], div[data-baseweb="select"] {
-        background: rgba(52, 73, 94, 0.3) !important;
+    /* INPUT FIELDS */
+    div[data-baseweb="input"], div[data-baseweb="select"] {{
+        background: {theme['card_bg']} !important;
         border: 1px solid rgba(255,255,255,0.05) !important;
         border-radius: 30px !important;
         transition: all 0.3s ease;
-    }
+    }}
     
-    div[data-baseweb="input"]:hover, div[data-baseweb="select"]:hover {
-        border-color: #3498DB !important;
-        background: rgba(52, 73, 94, 0.5) !important;
-    }
+    div[data-baseweb="input"]:hover, div[data-baseweb="select"]:hover {{
+        border-color: {theme['accent']} !important;
+    }}
     
-    input, select {
-        color: #ECF0F1 !important;
+    input, select {{
+        color: {theme['text']} !important;
         font-size: 0.9rem !important;
         padding: 0.6rem 1rem !important;
-    }
+    }}
     
-    .stTextInput label, .stSelectbox label, .stDateInput label {
-        color: #95A5A6 !important;
+    .stTextInput label, .stSelectbox label, .stDateInput label {{
+        color: {theme['text_secondary']} !important;
         font-size: 0.8rem !important;
         font-weight: 500 !important;
         margin-bottom: 0.2rem !important;
-    }
+    }}
     
-    /* DIVIDER KORPORAT */
-    hr {
-        background: linear-gradient(90deg, transparent, #3498DB, transparent) !important;
+    /* DIVIDER */
+    hr {{
+        background: linear-gradient(90deg, transparent, {theme['accent']}, transparent) !important;
         height: 1px !important;
         border: none !important;
         margin: 1.5rem 0 !important;
         opacity: 0.3;
-    }
+    }}
     
-    /* SCROLLBAR KORPORAT */
-    ::-webkit-scrollbar {
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {{
         width: 6px;
         height: 6px;
-    }
+    }}
     
-    ::-webkit-scrollbar-track {
-        background: rgba(52, 73, 94, 0.3);
+    ::-webkit-scrollbar-track {{
+        background: {theme['card_bg']};
         border-radius: 10px;
-    }
+    }}
     
-    ::-webkit-scrollbar-thumb {
-        background: #3498DB;
+    ::-webkit-scrollbar-thumb {{
+        background: {theme['accent']};
         border-radius: 10px;
-    }
+    }}
     
-    /* ===== MOBILE RESPONSIVENESS (KHUSUS HP) ===== */
-    @media (max-width: 768px) {
-        h1 { font-size: 1.8rem !important; }
-        h2 { font-size: 1.4rem !important; }
-        h3 { font-size: 1.1rem !important; }
+    /* POSITIVE/NEGATIVE COLORS */
+    .positive {{
+        color: {theme['positive']} !important;
+        font-weight: 600;
+    }}
+    
+    .negative {{
+        color: {theme['negative']} !important;
+        font-weight: 600;
+    }}
+    
+    /* MOBILE RESPONSIVENESS */
+    @media (max-width: 768px) {{
+        h1 {{ font-size: 1.8rem !important; }}
+        h2 {{ font-size: 1.4rem !important; }}
+        h3 {{ font-size: 1.1rem !important; }}
         
-        .premium-header {
+        .premium-header {{
             flex-direction: column;
             align-items: flex-start;
             gap: 0.5rem;
-        }
+        }}
         
-        div[data-testid="metric-container"] {
+        div[data-testid="metric-container"] {{
             padding: 12px !important;
             margin-bottom: 10px !important;
-        }
-        div[data-testid="metric-container"] div {
+        }}
+        div[data-testid="metric-container"] div {{
             font-size: 1.2rem !important;
-        }
+        }}
         
-        .stTabs [data-baseweb="tab-list"] {
+        .stTabs [data-baseweb="tab-list"] {{
             flex-wrap: nowrap !important;
             overflow-x: auto !important;
             gap: 15px !important;
             padding-bottom: 5px !important;
-        }
-        .stTabs [data-baseweb="tab"] {
+        }}
+        .stTabs [data-baseweb="tab"] {{
             white-space: nowrap !important;
             font-size: 0.85rem !important;
             padding: 8px 12px !important;
-        }
+        }}
         
-        .stDataFrame {
+        .stDataFrame {{
             overflow-x: auto !important;
-        }
-        .stDataFrame table {
+        }}
+        .stDataFrame table {{
             min-width: 800px !important; 
-        }
+        }}
         
-        .stButton>button {
+        .stButton>button {{
             padding: 8px 16px !important;
             font-size: 0.9rem !important;
-        }
-    }
+        }}
+    }}
     </style>
-    """, unsafe_allow_html=True)
+    
+    <script>
+    // COLOR SCALE UNTUK TABEL
+    function applyColorScale() {{
+        const tables = document.querySelectorAll('.stDataFrame table');
+        tables.forEach(table => {{
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {{
+                const cells = row.querySelectorAll('td');
+                
+                // P&L column (index 8)
+                if (cells.length >= 9) {{
+                    const pnlCell = cells[8];
+                    if (pnlCell && pnlCell.textContent) {{
+                        const pnlText = pnlCell.textContent;
+                        const pnlValue = parseFloat(pnlText.replace(/[^0-9-]/g, ''));
+                        
+                        if (!isNaN(pnlValue)) {{
+                            if (pnlValue > 0) {{
+                                pnlCell.style.background = 'linear-gradient(90deg, {theme['positive']}20, transparent)';
+                                pnlCell.style.color = '{theme['positive']}';
+                                pnlCell.style.fontWeight = '600';
+                            }} else if (pnlValue < 0) {{
+                                pnlCell.style.background = 'linear-gradient(90deg, {theme['negative']}20, transparent)';
+                                pnlCell.style.color = '{theme['negative']}';
+                                pnlCell.style.fontWeight = '600';
+                            }}
+                        }}
+                    }}
+                }}
+                
+                // Change % column (index 7)
+                if (cells.length >= 8) {{
+                    const changeCell = cells[7];
+                    if (changeCell && changeCell.textContent) {{
+                        const changeText = changeCell.textContent;
+                        const changeValue = parseFloat(changeText.replace(/[^0-9.-]/g, ''));
+                        
+                        if (!isNaN(changeValue)) {{
+                            if (changeValue > 0) {{
+                                changeCell.style.color = '{theme['positive']}';
+                                changeCell.style.fontWeight = '600';
+                            }} else if (changeValue < 0) {{
+                                changeCell.style.color = '{theme['negative']}';
+                                changeCell.style.fontWeight = '600';
+                            }}
+                        }}
+                    }}
+                }}
+            }});
+        }});
+    }}
+    
+    document.addEventListener('DOMContentLoaded', applyColorScale);
+    const observer = new MutationObserver(applyColorScale);
+    observer.observe(document.body, {{ childList: true, subtree: true }});
+    </script>
+""", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------
-# HEADER KORPORAT
+# HEADER
 # -----------------------------------------------------------------
 st.markdown(f"""
     <div class="premium-header">
@@ -309,7 +476,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------
-# KONEKSI GOOGLE SHEETS
+# KONEKSI GOOGLE SHEETS (FIXED)
 # -----------------------------------------------------------------
 # Sesuai dengan kolom di GSheet
 COLUMNS = [
@@ -317,6 +484,21 @@ COLUMNS = [
     "Current Date", "Current Price", "Custom Date", "Custom Price", 
     "Possition", "Change %", "P&L", "Change % (Custom)", "P&L (Custom)"
 ]
+
+@st.cache_resource(ttl=300)
+def get_gsheet_client():
+    try:
+        # PERBAIKAN: Metode otentikasi yang benar
+        if "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+            client = gspread.service_account_from_dict(creds_dict)
+            return client
+        else:
+            st.error("❌ Gagal: secrets 'gcp_service_account' tidak ditemukan!")
+            return None
+    except Exception as e:
+        st.error(f"🔴 Gagal koneksi ke Google Sheets: {str(e)}")
+        return None
 
 @st.cache_data(ttl=30)
 def load_data(_client):
@@ -379,7 +561,10 @@ else:
 def format_rupiah(angka):
     if pd.isna(angka) or angka == 0:
         return "Rp 0"
-    return f"Rp {angka:,.0f}".replace(',', '.')
+    try:
+        return f"Rp {float(angka):,.0f}".replace(',', '.')
+    except:
+        return "Rp 0"
 
 # =========================================================================
 # TABS
@@ -420,7 +605,7 @@ with tabs[0]:
                         'Possition', 'Current Price', 'Change %', 'P&L']
         df_display = df[display_cols].copy()
         
-        # Format dates & Hindari Error NaT
+        # Format dates
         df_display['Buy Date'] = df_display['Buy Date'].apply(lambda x: x.strftime('%d/%m/%y') if pd.notna(x) else '-')
         
         # Format numbers dengan separator ribuan
@@ -430,7 +615,7 @@ with tabs[0]:
         df_display['P&L'] = df_display['P&L'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
         df_display['Change %'] = df_display['Change %'].apply(lambda x: f"{x:.1f}%")
         
-        # Rename kolom agar rapi
+        # Rename kolom
         df_display = df_display.rename(columns={
             "Buy Date": "📅 DATE",
             "Stock Code": "📊 STOCK",
@@ -443,27 +628,8 @@ with tabs[0]:
             "P&L": "💲 P&L"
         })
 
-        # PERBAIKAN: Fungsi pewarnaan kolom P&L dengan Pandas Styler
-        def color_profit_loss(val):
-            try:
-                clean_val = str(val).replace('Rp', '').replace('%', '').replace('.', '').replace(',', '').strip()
-                num = float(clean_val)
-                if num > 0:
-                    return 'color: #2ECC71; font-weight: 700;'
-                elif num < 0:
-                    return 'color: #E74C3C; font-weight: 700;'
-                else:
-                    return 'color: #BDC3C7;'
-            except:
-                return ''
-
-        try:
-            styled_df = df_display.style.map(color_profit_loss, subset=['📈 CHANGE', '💲 P&L'])
-        except:
-            styled_df = df_display.style.applymap(color_profit_loss, subset=['📈 CHANGE', '💲 P&L'])
-
         st.dataframe(
-            styled_df,
+            df_display,
             use_container_width=True,
             hide_index=True,
             height=400
@@ -485,7 +651,7 @@ with tabs[0]:
         st.info("✨ Belum ada transaksi. Mulai dengan tab ENTRY")
 
 # ==========================================
-# ENTRY - CREATE
+# ENTRY - CREATE (FIXED)
 # ==========================================
 with tabs[1]:
     st.subheader("➕ ADD NEW TRANSACTION")
@@ -512,77 +678,94 @@ with tabs[1]:
             else:
                 try:
                     new_row = [
-                        buy_date.strftime("%Y-%m-%d"), stock_code, qty_lot, price_buy,
-                        "", "", "", "", "", position, "", "", "", ""
+                        buy_date.strftime("%Y-%m-%d"),  # Buy Date
+                        stock_code,                      # Stock Code
+                        qty_lot,                          # Qty Lot
+                        price_buy,                        # Price (Buy)
+                        "",                               # Value (Buy) - formula
+                        "",                               # Current Date - formula
+                        "",                               # Current Price - formula
+                        "",                               # Custom Date
+                        "",                               # Custom Price - formula
+                        position,                         # Possition
+                        "",                               # Change % - formula
+                        "",                               # P&L - formula
+                        "",                               # Change % (Custom) - formula
+                        ""                                # P&L (Custom) - formula
                     ]
                     
                     with st.spinner("Menyimpan ke Google Sheets..."):
-                        # PERBAIKAN 2: Anti Ghost Rows (Cari baris kosong di kolom B lalu timpa)
-                        kolom_b = worksheet.col_values(2) # Ambil isi kolom B (Stock Code)
-                        baris_baru = len(kolom_b) + 1
+                        # PERBAIKAN: Menggunakan append_row yang benar
+                        worksheet.append_row(new_row, value_input_option='USER_ENTERED')
                         
-                        worksheet.update(
-                            range_name=f"A{baris_baru}", 
-                            values=[new_row], 
-                            value_input_option='USER_ENTERED'
-                        )
-                        
+                        # Clear cache dan refresh
                         st.cache_data.clear()
                         st.success(f"✅ {stock_code} berhasil ditambahkan!")
                         st.balloons()
                         st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
+                    st.error("Detail: Pastikan koneksi ke Google Sheets berhasil")
 
 # ==========================================
-# UPDATE - Edit
+# UPDATE - Edit (FIXED)
 # ==========================================
 with tabs[2]:
     st.subheader("✏️ UPDATE TRANSACTION")
     
     if not df.empty:
-        # PERBAIKAN 3: Anti error tanggal NaT saat load ke Selectbox
+        # Pilih transaksi
         options = [
             f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'} - {format_rupiah(row['Price (Buy)'])}" 
             for _, row in df.iterrows()
         ]
-        selected = st.selectbox("Pilih transaksi:", options)
         
-        if selected:
-            idx = options.index(selected)
-            row = df.iloc[idx]
-            gsheet_row = idx + 2  # +2 karena header di baris 1
+        if options:
+            selected = st.selectbox("Pilih transaksi:", options)
             
-            st.info(f"**Mengedit:** {row['Stock Code']} - Beli: {format_rupiah(row['Price (Buy)'])}")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                new_position = st.selectbox(
-                    "📍 Update Position",
-                    ["Open/Floating", "Closed"],
-                    index=0 if 'Open' in str(row['Possition']) else 1
-                )
-            
-            with col2:
-                custom_date = st.date_input(
-                    "📅 Custom Date (Skenario)",
-                    value=row['Custom Date'] if pd.notna(row['Custom Date']) else date.today()
-                )
-            
-            if st.button("🔄 UPDATE", use_container_width=True):
-                try:
-                    with st.spinner("Updating..."):
-                        updates = [
-                            {'range': f'J{gsheet_row}', 'values': [[new_position]]},  
-                            {'range': f'H{gsheet_row}', 'values': [[custom_date.strftime("%Y-%m-%d")]]}  
-                        ]
-                        worksheet.batch_update(updates, value_input_option='USER_ENTERED')
-                        st.cache_data.clear()
-                        st.success("✅ Data berhasil diupdate!")
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
+            if selected:
+                idx = options.index(selected)
+                row = df.iloc[idx]
+                gsheet_row = idx + 2  # +2 karena header di baris 1
+                
+                st.info(f"**Mengedit:** {row['Stock Code']} - Beli: {format_rupiah(row['Price (Buy)'])}")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    new_position = st.selectbox(
+                        "📍 Update Position",
+                        ["Open/Floating", "Closed"],
+                        index=0 if 'Open' in str(row['Possition']) else 1
+                    )
+                
+                with col2:
+                    # Gunakan today jika Custom Date kosong
+                    default_date = row['Custom Date'] if pd.notna(row['Custom Date']) else date.today()
+                    custom_date = st.date_input("📅 Custom Date (Skenario)", default_date)
+                
+                if st.button("🔄 UPDATE", use_container_width=True):
+                    try:
+                        with st.spinner("Updating..."):
+                            # PERBAIKAN: Update langsung dengan update
+                            worksheet.update(
+                                f'J{gsheet_row}', 
+                                [[new_position]], 
+                                value_input_option='USER_ENTERED'
+                            )
+                            worksheet.update(
+                                f'H{gsheet_row}', 
+                                [[custom_date.strftime("%Y-%m-%d")]], 
+                                value_input_option='USER_ENTERED'
+                            )
+                            
+                            st.cache_data.clear()
+                            st.success("✅ Data berhasil diupdate!")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+        else:
+            st.info("Tidak ada transaksi untuk diupdate")
     else:
         st.info("Belum ada transaksi untuk diupdate")
 
@@ -601,7 +784,7 @@ with tabs[3]:
             with col1:
                 # Bar Chart P&L
                 fig = go.Figure()
-                colors = ['#2ECC71' if x > 0 else '#E74C3C' for x in df_open['P&L']]
+                colors = [theme['positive'] if x > 0 else theme['negative'] for x in df_open['P&L']]
                 
                 fig.add_trace(go.Bar(
                     x=df_open['Stock Code'],
@@ -609,7 +792,7 @@ with tabs[3]:
                     marker_color=colors,
                     text=df_open['P&L'].apply(lambda x: f'Rp {x:,.0f}'),
                     textposition='outside',
-                    textfont=dict(size=10)
+                    textfont=dict(size=10, color=theme['text'])
                 ))
                 
                 fig.update_layout(
@@ -617,6 +800,7 @@ with tabs[3]:
                     template="plotly_dark",
                     plot_bgcolor='rgba(0,0,0,0)',
                     paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color=theme['text']),
                     height=300,
                     margin=dict(l=20, r=20, t=40, b=20),
                     showlegend=False,
@@ -633,9 +817,9 @@ with tabs[3]:
                     fig = go.Figure(data=[go.Pie(
                         labels=['WIN', 'LOSS'],
                         values=[wins, losses],
-                        marker_colors=['#2ECC71', '#E74C3C'],
+                        marker_colors=[theme['positive'], theme['negative']],
                         textinfo='label+percent',
-                        textfont=dict(size=12),
+                        textfont=dict(size=12, color=theme['text']),
                         hole=0.4,
                         pull=[0.02, 0]
                     )])
@@ -645,12 +829,13 @@ with tabs[3]:
                         template="plotly_dark",
                         plot_bgcolor='rgba(0,0,0,0)',
                         paper_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color=theme['text']),
                         height=300,
                         margin=dict(l=20, r=20, t=40, b=20),
                         annotations=[dict(
                             text=f'{wins+losses} Trades',
                             x=0.5, y=0.5,
-                            font=dict(size=12, color='white')
+                            font=dict(size=12, color=theme['text'])
                         )]
                     )
                     st.plotly_chart(fig, use_container_width=True)
@@ -678,41 +863,48 @@ with tabs[3]:
         st.info("Tambah transaksi untuk melihat analitik")
 
 # ==========================================
-# DELETE
+# DELETE (FIXED)
 # ==========================================
 with tabs[4]:
     st.subheader("🗑️ DELETE TRANSACTION")
     
     if not df.empty:
-        # PERBAIKAN 4: Anti error tanggal NaT saat load ke Selectbox
+        # Pilih transaksi untuk dihapus
         options = [
             f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'} - {format_rupiah(row['Value (Buy)'])}" 
             for _, row in df.iterrows()
         ]
-        to_delete = st.selectbox("Pilih transaksi untuk dihapus:", options)
         
-        if to_delete:
-            idx = options.index(to_delete)
-            row = df.iloc[idx]
-            gsheet_row = idx + 2
+        if options:
+            to_delete = st.selectbox("Pilih transaksi untuk dihapus:", options)
             
-            st.warning(f"⚠️ PERMANENT DELETE: **{row['Stock Code']}**")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🗑️ KONFIRMASI DELETE", use_container_width=True):
-                    try:
-                        with st.spinner("Deleting..."):
-                            # PERBAIKAN 5: Menggunakan delete_row() BUKAN delete_rows()
-                            worksheet.delete_row(gsheet_row)
-                            st.cache_data.clear()
-                            st.success("✅ Transaksi dihapus!")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
-            with col2:
-                if st.button("BATAL", use_container_width=True):
-                    st.rerun()
+            if to_delete:
+                idx = options.index(to_delete)
+                row = df.iloc[idx]
+                gsheet_row = idx + 2  # +2 karena header di baris 1
+                
+                st.warning(f"⚠️ PERMANENT DELETE: **{row['Stock Code']}**")
+                st.write(f"Tanggal: {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'}")
+                st.write(f"Nilai: {format_rupiah(row['Value (Buy)'])}")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("🗑️ KONFIRMASI DELETE", use_container_width=True):
+                        try:
+                            with st.spinner("Menghapus..."):
+                                # PERBAIKAN: Menggunakan delete_rows dengan parameter yang benar
+                                worksheet.delete_rows(gsheet_row)
+                                
+                                st.cache_data.clear()
+                                st.success("✅ Transaksi dihapus!")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error: {str(e)}")
+                with col2:
+                    if st.button("BATAL", use_container_width=True):
+                        st.rerun()
+        else:
+            st.info("Tidak ada transaksi untuk dihapus")
     else:
         st.info("Belum ada transaksi untuk dihapus")
 
