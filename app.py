@@ -11,23 +11,23 @@ import numpy as np
 # KONFIGURASI HALAMAN
 # -----------------------------------------------------------------
 st.set_page_config(
-    page_title="AlphaStock Pro", 
-    page_icon="📊", 
+    page_title="AlphaStock Trade Journal", 
+    page_icon="📈", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # -----------------------------------------------------------------
-# PREMIUM CSS - ELEGAN & KOMPAK
+# DARK ABU-ABU TUA KORPORAT CSS
 # -----------------------------------------------------------------
 st.markdown("""
     <style>
-    /* MAIN BACKGROUND PREMIUM */
+    /* MAIN BACKGROUND - DARK ABU TUA KORPORAT */
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #1E1A3A, #0B0F1C 80%);
+        background: linear-gradient(135deg, #2C3E50 0%, #34495E 50%, #2C3E50 100%);
     }
     
-    /* KONTENER UTAMA LEBIH RAPI */
+    /* KONTENER UTAMA */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
@@ -35,9 +35,9 @@ st.markdown("""
         margin: 0 auto !important;
     }
     
-    /* HEADER ELEGAN */
+    /* HEADER KORPORAT */
     .premium-header {
-        background: rgba(15, 23, 42, 0.4);
+        background: rgba(44, 62, 80, 0.7);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -47,30 +47,34 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         align-items: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
     
     .header-title {
         font-size: 1.8rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #818CF8, #C084FC, #F472B6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+        color: #ECF0F1;
         letter-spacing: -0.02em;
     }
     
+    .header-title span {
+        color: #3498DB;
+        font-weight: 300;
+    }
+    
     .header-date {
-        color: #94A3B8;
+        color: #BDC3C7;
         font-size: 0.9rem;
-        background: rgba(255,255,255,0.03);
+        background: rgba(52, 73, 94, 0.5);
         padding: 0.5rem 1rem;
         border-radius: 20px;
         border: 1px solid rgba(255,255,255,0.05);
     }
     
-    /* TABS PREMIUM - LEBIH KOMPAK */
+    /* TABS KORPORAT */
     .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
-        background: rgba(15, 23, 42, 0.5);
+        background: rgba(52, 73, 94, 0.5);
         backdrop-filter: blur(10px);
         padding: 4px;
         border-radius: 40px;
@@ -84,8 +88,8 @@ st.markdown("""
         background: transparent;
         border-radius: 30px;
         padding: 0.5rem 1.2rem !important;
-        color: #94A3B8;
-        font-weight: 600;
+        color: #BDC3C7;
+        font-weight: 500;
         font-size: 0.9rem !important;
         transition: all 0.3s ease;
         white-space: nowrap;
@@ -93,66 +97,52 @@ st.markdown("""
     }
     
     .stTabs [data-baseweb="tab"]:hover {
-        color: white;
+        color: #ECF0F1;
         background: rgba(255,255,255,0.02);
         border-color: rgba(255,255,255,0.05);
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6) !important;
+        background: #3498DB !important;
         color: white !important;
-        box-shadow: 0 8px 20px -8px #3B82F6;
+        box-shadow: 0 4px 10px rgba(52,152,219,0.3);
     }
     
-    /* METRIC CARDS PREMIUM - KOMPAK */
+    /* METRIC CARDS KORPORAT */
     div[data-testid="metric-container"] {
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(167, 139, 250, 0.08)) !important;
-        border: 1px solid rgba(96, 165, 250, 0.15) !important;
-        border-radius: 24px !important;
+        background: rgba(52, 73, 94, 0.3) !important;
+        border: 1px solid rgba(255,255,255,0.05) !important;
+        border-radius: 16px !important;
         padding: 1rem !important;
         backdrop-filter: blur(8px);
         transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
     }
     
-    div[data-testid="metric-container"]::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-        transition: left 0.5s ease;
-    }
-    
-    div[data-testid="metric-container"]:hover::before {
-        left: 100%;
+    div[data-testid="metric-container"]:hover {
+        border-color: #3498DB !important;
+        background: rgba(52, 73, 94, 0.5) !important;
     }
     
     div[data-testid="metric-container"] label {
-        color: #94A3B8 !important;
+        color: #95A5A6 !important;
         font-size: 0.75rem !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.05em !important;
     }
     
     div[data-testid="metric-container"] div {
-        background: linear-gradient(135deg, #F0F9FF, #E2E8F0);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #ECF0F1 !important;
         font-size: 1.5rem !important;
-        font-weight: 700 !important;
+        font-weight: 600 !important;
     }
     
-    /* DATAFRAME PREMIUM dengan COLOR SCALE VIBRANT */
+    /* DATAFRAME KORPORAT dengan COLOR SCALE */
     .stDataFrame {
-        background: rgba(15, 23, 42, 0.3);
+        background: rgba(44, 62, 80, 0.3);
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255,255,255,0.03);
-        border-radius: 24px;
+        border-radius: 16px;
         overflow: hidden;
     }
     
@@ -163,18 +153,18 @@ st.markdown("""
     }
     
     .stDataFrame th {
-        background: rgba(59, 130, 246, 0.15) !important;
-        color: #F0F9FF !important;
-        font-weight: 700 !important;
+        background: rgba(52, 73, 94, 0.5) !important;
+        color: #ECF0F1 !important;
+        font-weight: 600 !important;
         font-size: 0.8rem !important;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         padding: 0.8rem 1rem !important;
-        border-bottom: 2px solid rgba(59, 130, 246, 0.2) !important;
+        border-bottom: 2px solid #3498DB !important;
     }
     
     .stDataFrame td {
-        color: #CBD5E1 !important;
+        color: #BDC3C7 !important;
         padding: 0.6rem 1rem !important;
         border-bottom: 1px solid rgba(255,255,255,0.02) !important;
         font-size: 0.9rem !important;
@@ -182,102 +172,76 @@ st.markdown("""
     }
     
     .stDataFrame tr:hover td {
-        background: rgba(59, 130, 246, 0.08) !important;
+        background: rgba(52, 73, 94, 0.3) !important;
     }
     
-    /* BUTTON PREMIUM - KOMPAK */
+    /* BUTTON KORPORAT */
     .stButton>button {
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+        background: #3498DB;
         color: white;
         border: none;
-        border-radius: 40px !important;
+        border-radius: 30px !important;
         padding: 0.4rem 1.5rem !important;
-        font-weight: 600;
+        font-weight: 500;
         font-size: 0.85rem !important;
-        box-shadow: 0 8px 20px -8px #3B82F6;
-        border: 1px solid rgba(255,255,255,0.1);
         transition: all 0.3s ease;
     }
     
     .stButton>button:hover {
+        background: #2980B9;
         transform: translateY(-2px);
-        box-shadow: 0 12px 25px -8px #3B82F6;
+        box-shadow: 0 4px 10px rgba(52,152,219,0.3);
     }
     
-    /* INPUT FIELDS PREMIUM */
+    /* INPUT FIELDS KORPORAT */
     div[data-baseweb="input"], div[data-baseweb="select"] {
-        background: rgba(30, 41, 59, 0.4) !important;
+        background: rgba(52, 73, 94, 0.3) !important;
         border: 1px solid rgba(255,255,255,0.05) !important;
-        border-radius: 40px !important;
+        border-radius: 30px !important;
         transition: all 0.3s ease;
-        backdrop-filter: blur(4px);
     }
     
     div[data-baseweb="input"]:hover, div[data-baseweb="select"]:hover {
-        border-color: #3B82F6 !important;
-        background: rgba(30, 41, 59, 0.6) !important;
+        border-color: #3498DB !important;
+        background: rgba(52, 73, 94, 0.5) !important;
     }
     
     input, select {
-        color: #F0F9FF !important;
+        color: #ECF0F1 !important;
         font-size: 0.9rem !important;
         padding: 0.6rem 1rem !important;
     }
     
     .stTextInput label, .stSelectbox label, .stDateInput label {
-        color: #94A3B8 !important;
+        color: #95A5A6 !important;
         font-size: 0.8rem !important;
         font-weight: 500 !important;
         margin-bottom: 0.2rem !important;
     }
     
-    /* FORM HORIZONTAL PREMIUM */
-    .premium-form {
-        background: rgba(15, 23, 42, 0.4);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255,255,255,0.03);
-        border-radius: 50px;
-        padding: 0.8rem 1.5rem;
-        margin-bottom: 1.5rem;
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-    
-    /* DIVIDER PREMIUM */
+    /* DIVIDER KORPORAT */
     hr {
-        background: linear-gradient(90deg, transparent, #3B82F6, #8B5CF6, #3B82F6, transparent) !important;
-        height: 2px !important;
+        background: linear-gradient(90deg, transparent, #3498DB, transparent) !important;
+        height: 1px !important;
         border: none !important;
         margin: 1.5rem 0 !important;
         opacity: 0.3;
     }
     
-    /* SCROLLBAR PREMIUM */
+    /* SCROLLBAR KORPORAT */
     ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
     }
     
     ::-webkit-scrollbar-track {
-        background: rgba(15, 23, 42, 0.5);
+        background: rgba(52, 73, 94, 0.3);
         border-radius: 10px;
     }
     
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+        background: #3498DB;
         border-radius: 10px;
-    }
-    
-    /* ANIMATIONS */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .element-container {
-        animation: fadeIn 0.4s ease-out;
     }
     
     /* MOBILE RESPONSIVE */
@@ -300,114 +264,67 @@ st.markdown("""
     </style>
     
     <script>
-    // PREMIUM COLOR SCALE UNTUK TABEL - VIBRANT VERSION
-    function applyPremiumColorScale() {
+    // COLOR SCALE UNTUK TABEL
+    function applyColorScale() {
         const tables = document.querySelectorAll('.stDataFrame table');
         tables.forEach(table => {
             const rows = table.querySelectorAll('tbody tr');
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 
-                // Pastikan ada cukup kolom
-                if (cells.length < 12) return;
-                
-                // ===== KOLOM P&L (index 11) =====
-                const pnlCell = cells[11];
-                const pnlText = pnlCell?.textContent || '';
-                const pnlValue = parseFloat(pnlText.replace(/[^0-9-]/g, ''));
-                
-                if (!isNaN(pnlValue)) {
-                    // Reset style
-                    pnlCell.style.background = '';
-                    pnlCell.style.color = '';
-                    pnlCell.style.fontWeight = '';
-                    pnlCell.style.textShadow = '';
+                // Kolom P&L (index 11)
+                if (cells.length >= 12) {
+                    const pnlCell = cells[11];
+                    const pnlText = pnlCell?.textContent || '';
+                    const pnlValue = parseFloat(pnlText.replace(/[^0-9-]/g, ''));
                     
-                    if (pnlValue > 0) {
-                        // POSITIVE - HIJAU VIBRANT
-                        const intensity = Math.min(pnlValue / 1000000, 0.4);
-                        pnlCell.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${0.3 + intensity}), rgba(16, 185, 129, 0.1))`;
-                        pnlCell.style.color = '#D1FAE5';
-                        pnlCell.style.fontWeight = '700';
-                        pnlCell.style.textShadow = '0 0 8px rgba(16,185,129,0.5)';
-                    } else if (pnlValue < 0) {
-                        // NEGATIVE - MERAH VIBRANT
-                        const intensity = Math.min(Math.abs(pnlValue) / 1000000, 0.4);
-                        pnlCell.style.background = `linear-gradient(90deg, rgba(239, 68, 68, ${0.3 + intensity}), rgba(239, 68, 68, 0.1))`;
-                        pnlCell.style.color = '#FEE2E2';
-                        pnlCell.style.fontWeight = '700';
-                        pnlCell.style.textShadow = '0 0 8px rgba(239,68,68,0.5)';
+                    if (!isNaN(pnlValue)) {
+                        if (pnlValue > 0) {
+                            pnlCell.style.background = 'linear-gradient(90deg, rgba(46, 204, 113, 0.2), rgba(46, 204, 113, 0.05))';
+                            pnlCell.style.color = '#2ECC71';
+                            pnlCell.style.fontWeight = '600';
+                        } else if (pnlValue < 0) {
+                            pnlCell.style.background = 'linear-gradient(90deg, rgba(231, 76, 60, 0.2), rgba(231, 76, 60, 0.05))';
+                            pnlCell.style.color = '#E74C3C';
+                            pnlCell.style.fontWeight = '600';
+                        }
                     }
                 }
                 
-                // ===== KOLOM CHANGE % (index 10) =====
-                const changeCell = cells[10];
-                const changeText = changeCell?.textContent || '';
-                const changeValue = parseFloat(changeText.replace(/[^0-9.-]/g, ''));
-                
-                if (!isNaN(changeValue)) {
-                    if (changeValue > 0) {
-                        changeCell.style.color = '#6EE7B7';
-                        changeCell.style.fontWeight = '600';
-                        changeCell.style.background = 'linear-gradient(90deg, rgba(16, 185, 129, 0.15), transparent)';
-                    } else if (changeValue < 0) {
-                        changeCell.style.color = '#FCA5A5';
-                        changeCell.style.fontWeight = '600';
-                        changeCell.style.background = 'linear-gradient(90deg, rgba(239, 68, 68, 0.15), transparent)';
+                // Kolom Change % (index 10)
+                if (cells.length >= 11) {
+                    const changeCell = cells[10];
+                    const changeText = changeCell?.textContent || '';
+                    const changeValue = parseFloat(changeText.replace(/[^0-9.-]/g, ''));
+                    
+                    if (!isNaN(changeValue)) {
+                        if (changeValue > 0) {
+                            changeCell.style.color = '#2ECC71';
+                            changeCell.style.fontWeight = '600';
+                        } else if (changeValue < 0) {
+                            changeCell.style.color = '#E74C3C';
+                            changeCell.style.fontWeight = '600';
+                        }
                     }
                 }
-                
-                // ===== KOLOM PRICE BUY (index 3) =====
-                const priceCell = cells[3];
-                if (priceCell) {
-                    priceCell.style.color = '#FCD34D';
-                    priceCell.style.fontWeight = '500';
-                }
-                
-                // ===== KOLOM QTY LOT (index 2) =====
-                const lotCell = cells[2];
-                if (lotCell) {
-                    lotCell.style.color = '#93C5FD';
-                    lotCell.style.fontWeight = '500';
-                }
-            });
-            
-            // Header styling
-            const headers = table.querySelectorAll('th');
-            headers.forEach(header => {
-                header.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))';
-                header.style.color = '#F0F9FF';
-                header.style.fontWeight = '700';
-                header.style.fontSize = '0.8rem';
-                header.style.textTransform = 'uppercase';
-                header.style.letterSpacing = '0.05em';
             });
         });
     }
     
-    // Run on load and observe changes
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(applyPremiumColorScale, 500); // Delay untuk pastikan table sudah render
-    });
-    
-    const observer = new MutationObserver(function() {
-        setTimeout(applyPremiumColorScale, 100);
-    });
+    document.addEventListener('DOMContentLoaded', applyColorScale);
+    const observer = new MutationObserver(applyColorScale);
     observer.observe(document.body, { childList: true, subtree: true });
-    
-    // Run also when table updates
-    setInterval(applyPremiumColorScale, 2000);
     </script>
     """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------
-# HEADER PREMIUM
+# HEADER KORPORAT
 # -----------------------------------------------------------------
 st.markdown(f"""
     <div class="premium-header">
-        <div class="header-title">✨ AlphaStock Professional</div>
+        <div class="header-title">📈 AlphaStock <span>| Trade Journal</span></div>
         <div class="header-date">
-            <span>📅 {datetime.now().strftime('%A, %d %B %Y')}</span>
+            <span>📅 {datetime.now().strftime('%d %B %Y')}</span>
             <span style="margin-left: 1rem;">⏰ {datetime.now().strftime('%H:%M')}</span>
         </div>
     </div>
@@ -421,10 +338,11 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive"
 ]
 
+# Sesuai dengan kolom di GSheet
 COLUMNS = [
     "Buy Date", "Stock Code", "Qty Lot", "Price (Buy)", "Value (Buy)", 
     "Current Date", "Current Price", "Custom Date", "Custom Price", 
-    "Position", "Change %", "P&L", "Change % (Custom)", "P&L (Custom)"
+    "Possition", "Change %", "P&L", "Change % (Custom)", "P&L (Custom)"
 ]
 
 @st.cache_resource(ttl=300)
@@ -435,7 +353,7 @@ def get_gsheet_client():
         client = gspread.authorize(creds)
         return client
     except Exception as e:
-        st.error(f"🔴 Gagal koneksi: {str(e)}")
+        st.error(f"🔴 Gagal koneksi ke Google Sheets: {str(e)}")
         return None
 
 @st.cache_data(ttl=30)
@@ -451,9 +369,12 @@ def load_data(_client):
         if len(data) <= 1:
             return worksheet, pd.DataFrame(columns=COLUMNS)
             
-        df = pd.DataFrame(data[1:], columns=COLUMNS[:len(data[0])])
+        df = pd.DataFrame(data[1:], columns=COLUMNS)
+        
+        # Filter baris kosong
         df = df[df['Stock Code'].astype(str).str.strip() != '']
         
+        # Fungsi cleaning
         def clean_number(x):
             if pd.isna(x) or x == '':
                 return 0.0
@@ -466,6 +387,7 @@ def load_data(_client):
             except:
                 return 0.0
 
+        # Convert numeric columns
         numeric_cols = ["Price (Buy)", "Value (Buy)", "Current Price", "Custom Price", 
                        "P&L", "P&L (Custom)", "Change %", "Change % (Custom)", "Qty Lot"]
         
@@ -473,6 +395,7 @@ def load_data(_client):
             if col in df.columns:
                 df[col] = df[col].apply(clean_number)
         
+        # Convert date columns
         date_cols = ["Buy Date", "Current Date", "Custom Date"]
         for col in date_cols:
             if col in df.columns:
@@ -480,7 +403,7 @@ def load_data(_client):
         
         return worksheet, df
     except Exception as e:
-        st.error(f"🔴 Gagal load: {str(e)}")
+        st.error(f"🔴 Gagal memuat data: {str(e)}")
         return None, pd.DataFrame()
 
 # Initialize
@@ -491,49 +414,51 @@ else:
     st.stop()
 
 # =========================================================================
-# TABS PREMIUM
+# TABS
 # =========================================================================
 tabs = st.tabs(["📊 DASHBOARD", "➕ ENTRY", "✏️ UPDATE", "📈 ANALYTICS", "🗑️ DELETE"])
 
 # ==========================================
-# DASHBOARD PREMIUM
+# DASHBOARD
 # ==========================================
 with tabs[0]:
     if not df.empty:
-        df_open = df[df['Position'].str.contains('Open|Floating', case=False, na=False)]
+        # Filter open positions
+        df_open = df[df['Possition'].str.contains('Open|Floating', case=False, na=False)]
         
-        # METRICS PREMIUM
+        # METRICS
         cols = st.columns(4)
         with cols[0]:
-            total_val = df_open['Value (Buy)'].sum()
+            total_val = df_open['Value (Buy)'].sum() if not df_open.empty else 0
             st.metric("💰 TOTAL PORTFOLIO", f"Rp {total_val:,.0f}")
         with cols[1]:
-            pnl = df_open['P&L'].sum()
+            pnl = df_open['P&L'].sum() if not df_open.empty else 0
             pnl_pct = (pnl/total_val*100) if total_val > 0 else 0
-            delta_color = "normal" if pnl >= 0 else "inverse"
-            st.metric("📈 REALIZED P&L", f"Rp {pnl:,.0f}", 
-                     delta=f"{pnl_pct:.1f}%", delta_color="normal")
+            st.metric("📈 UNREALIZED P&L", f"Rp {pnl:,.0f}", delta=f"{pnl_pct:.1f}%")
         with cols[2]:
-            win_count = (df_open['P&L'] > 0).sum()
+            win_count = (df_open['P&L'] > 0).sum() if not df_open.empty else 0
             total_count = len(df_open)
             win_rate = (win_count/total_count*100) if total_count > 0 else 0
-            st.metric("🎯 WIN RATE", f"{win_rate:.1f}%", 
-                     delta=f"{win_count}/{total_count} trades")
+            st.metric("🎯 WIN RATE", f"{win_rate:.1f}%")
         with cols[3]:
             st.metric("📊 ACTIVE", f"{len(df_open)} positions")
         
         st.divider()
         
-        # TABLE PREMIUM dengan COLOR SCALE VIBRANT
-        st.subheader("📋 TRANSACTIONS")
+        # TABEL TRANSACTIONS
+        st.subheader("📋 TRANSACTION HISTORY")
         
-        display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Position', 'Change %', 'P&L']
+        display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Value (Buy)', 
+                       'Possition', 'Current Price', 'Change %', 'P&L']
         df_display = df[display_cols].copy()
+        
+        # Format dates
         df_display['Buy Date'] = df_display['Buy Date'].dt.strftime('%d/%m/%y')
+        
+        # Format numbers
         df_display['Change %'] = df_display['Change %'].round(1)
         df_display['P&L'] = df_display['P&L'].round(0)
         
-        # Tambah styling dengan column config
         st.dataframe(
             df_display,
             use_container_width=True,
@@ -541,218 +466,258 @@ with tabs[0]:
                 "Buy Date": "📅 DATE",
                 "Stock Code": "📊 STOCK",
                 "Qty Lot": "🔢 LOT",
-                "Price (Buy)": st.column_config.NumberColumn("💰 BUY PRICE", format="Rp %d"),
-                "Position": "📍 POS",
+                "Price (Buy)": st.column_config.NumberColumn("💰 BUY", format="Rp %d"),
+                "Value (Buy)": st.column_config.NumberColumn("💵 VALUE", format="Rp %d"),
+                "Possition": "📍 POS",
+                "Current Price": st.column_config.NumberColumn("💹 CURRENT", format="Rp %d"),
                 "Change %": st.column_config.NumberColumn("📈 CHG %", format="%.1f %%"),
-                "P&L": st.column_config.NumberColumn("💵 P&L", format="Rp %d"),
+                "P&L": st.column_config.NumberColumn("💲 P&L", format="Rp %d"),
             },
             hide_index=True,
             height=400
         )
         
-        # Summary row
+        # SUMMARY
         col1, col2, col3 = st.columns(3)
         with col1:
             total_pnl = df['P&L'].sum()
-            st.info(f"💰 Total P&L: **Rp {total_pnl:,.0f}**")
+            st.info(f"💰 Total Realized P&L: **Rp {total_pnl:,.0f}**")
         with col2:
-            winning_trades = (df['P&L'] > 0).sum()
-            st.info(f"✅ Winning Trades: **{winning_trades}**")
+            win_trades = (df['P&L'] > 0).sum()
+            st.info(f"✅ Winning Trades: **{win_trades}**")
         with col3:
-            losing_trades = (df['P&L'] < 0).sum()
-            st.info(f"❌ Losing Trades: **{losing_trades}**")
+            loss_trades = (df['P&L'] < 0).sum()
+            st.info(f"❌ Losing Trades: **{loss_trades}**")
             
     else:
         st.info("✨ Belum ada transaksi. Mulai dengan tab ENTRY")
 
 # ==========================================
-# ENTRY PREMIUM - HORIZONTAL
+# ENTRY - CREATE
 # ==========================================
 with tabs[1]:
-    st.subheader("➕ NEW TRANSACTION")
+    st.subheader("➕ ADD NEW TRANSACTION")
     
-    with st.form("premium_entry", clear_on_submit=True):
-        cols = st.columns([1.2, 1, 0.8, 1.2, 1, 0.8])
+    with st.form("entry_form", clear_on_submit=True):
+        cols = st.columns([1.2, 1, 0.8, 1.2, 1])
         
         with cols[0]:
-            date_input = st.date_input("DATE", date.today(), label_visibility="collapsed")
+            buy_date = st.date_input("📅 BUY DATE", date.today())
         with cols[1]:
-            stock_input = st.text_input("STOCK", "", placeholder="BBCA", label_visibility="collapsed").upper()
+            stock_code = st.text_input("📊 STOCK CODE", "", placeholder="BBCA").upper()
         with cols[2]:
-            lot_input = st.number_input("LOT", 1, step=1, label_visibility="collapsed")
+            qty_lot = st.number_input("🔢 LOT", 1, step=1)
         with cols[3]:
-            price_input = st.number_input("PRICE", 1, step=10, label_visibility="collapsed")
+            price_buy = st.number_input("💰 BUY PRICE", 1, step=10)
         with cols[4]:
-            pos_input = st.selectbox("POS", ["OPEN", "CLOSED"], label_visibility="collapsed")
-        with cols[5]:
-            submitted = st.form_submit_button("➕ ADD", use_container_width=True)
+            position = st.selectbox("📍 POSITION", ["Open/Floating", "Closed"])
+        
+        submitted = st.form_submit_button("➕ ADD TRANSACTION", use_container_width=True)
         
         if submitted:
-            if not stock_input:
-                st.error("❌ Stock code required")
+            if not stock_code:
+                st.error("❌ Stock code wajib diisi!")
             else:
                 try:
                     new_row = [
-                        date_input.strftime("%Y-%m-%d"),
-                        stock_input,
-                        lot_input,
-                        price_input,
-                        "", "", "", "", "",
-                        "Open/Floating" if pos_input == "OPEN" else "Closed",
-                        "", "", "", ""
+                        buy_date.strftime("%Y-%m-%d"),  # Buy Date
+                        stock_code,                      # Stock Code
+                        qty_lot,                          # Qty Lot
+                        price_buy,                        # Price (Buy)
+                        "",                               # Value (Buy) - formula
+                        "",                               # Current Date - formula
+                        "",                               # Current Price - formula
+                        "",                               # Custom Date
+                        "",                               # Custom Price - formula
+                        position,                         # Possition
+                        "",                               # Change % - formula
+                        "",                               # P&L - formula
+                        "",                               # Change % (Custom) - formula
+                        ""                                # P&L (Custom) - formula
                     ]
                     worksheet.append_row(new_row, value_input_option='USER_ENTERED')
                     st.cache_data.clear()
-                    st.success(f"✅ {stock_input} added successfully")
+                    st.success(f"✅ {stock_code} berhasil ditambahkan!")
                     st.balloons()
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
 
 # ==========================================
-# UPDATE PREMIUM
+# UPDATE - Edit
 # ==========================================
 with tabs[2]:
-    st.subheader("✏️ UPDATE POSITION")
+    st.subheader("✏️ UPDATE TRANSACTION")
     
     if not df.empty:
-        options = [f"{row['Stock Code']} • {row['Buy Date'].strftime('%d/%b')} • Rp {row['Price (Buy)']:,.0f}" 
+        # Pilih transaksi
+        options = [f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y')} - Rp {row['Price (Buy)']:,.0f}" 
                   for _, row in df.iterrows()]
-        selected = st.selectbox("SELECT TRANSACTION", options)
+        selected = st.selectbox("Pilih transaksi:", options)
         
         if selected:
             idx = options.index(selected)
             row = df.iloc[idx]
-            gsheet_row = idx + 2
+            gsheet_row = idx + 2  # +2 karena header di baris 1
             
-            col1, col2, col3 = st.columns([2, 2, 1])
+            st.info(f"**Mengedit:** {row['Stock Code']} - Beli: Rp {row['Price (Buy)']:,.0f}")
+            
+            col1, col2 = st.columns(2)
+            
             with col1:
-                new_pos = st.selectbox("POSITION", ["Open/Floating", "Closed"],
-                                      index=0 if 'Open' in row['Position'] else 1)
+                # Update Position
+                new_position = st.selectbox(
+                    "📍 Update Position",
+                    ["Open/Floating", "Closed"],
+                    index=0 if 'Open' in str(row['Possition']) else 1
+                )
+            
             with col2:
-                custom_date = st.date_input("CUSTOM DATE", date.today())
-            with col3:
-                if st.button("UPDATE", use_container_width=True):
-                    try:
-                        updates = [
-                            {'range': f'J{gsheet_row}', 'values': [[new_pos]]},
-                            {'range': f'H{gsheet_row}', 'values': [[custom_date.strftime("%Y-%m-%d")]]}
-                        ]
-                        worksheet.batch_update(updates, value_input_option='USER_ENTERED')
-                        st.cache_data.clear()
-                        st.success("✅ Updated")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
+                # Update Custom Date
+                custom_date = st.date_input(
+                    "📅 Custom Date (Skenario)",
+                    value=row['Custom Date'] if pd.notna(row['Custom Date']) else date.today()
+                )
+            
+            if st.button("🔄 UPDATE", use_container_width=True):
+                try:
+                    updates = [
+                        {'range': f'J{gsheet_row}', 'values': [[new_position]]},  # Kolom Possition
+                        {'range': f'H{gsheet_row}', 'values': [[custom_date.strftime("%Y-%m-%d")]]}  # Kolom Custom Date
+                    ]
+                    worksheet.batch_update(updates, value_input_option='USER_ENTERED')
+                    st.cache_data.clear()
+                    st.success("✅ Data berhasil diupdate!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
     else:
-        st.info("No transactions yet")
+        st.info("Belum ada transaksi untuk diupdate")
 
 # ==========================================
-# ANALYTICS PREMIUM
+# ANALYTICS
 # ==========================================
 with tabs[3]:
-    st.subheader("📈 PORTFOLIO ANALYTICS")
+    st.subheader("📈 ANALYTICS DASHBOARD")
     
-    if not df.empty and not df[df['Position'].str.contains('Open', na=False)].empty:
-        df_open = df[df['Position'].str.contains('Open', na=False)]
+    if not df.empty:
+        df_open = df[df['Possition'].str.contains('Open', na=False)]
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Bar Chart Premium
-            fig = go.Figure()
-            colors = ['#10B981' if x > 0 else '#EF4444' for x in df_open['P&L']]
+        if not df_open.empty:
+            col1, col2 = st.columns(2)
             
-            fig.add_trace(go.Bar(
-                x=df_open['Stock Code'],
-                y=df_open['P&L'],
-                marker_color=colors,
-                text=df_open['P&L'].apply(lambda x: f'Rp {x:,.0f}'),
-                textposition='outside',
-                textfont=dict(color='white', size=10)
-            ))
+            with col1:
+                # Bar Chart P&L
+                fig = go.Figure()
+                colors = ['#2ECC71' if x > 0 else '#E74C3C' for x in df_open['P&L']]
+                
+                fig.add_trace(go.Bar(
+                    x=df_open['Stock Code'],
+                    y=df_open['P&L'],
+                    marker_color=colors,
+                    text=df_open['P&L'].apply(lambda x: f'Rp {x:,.0f}'),
+                    textposition='outside',
+                ))
+                
+                fig.update_layout(
+                    title="📊 P&L per Saham",
+                    template="plotly_dark",
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    height=300,
+                    margin=dict(l=20, r=20, t=40, b=20),
+                    showlegend=False
+                )
+                st.plotly_chart(fig, use_container_width=True)
             
-            fig.update_layout(
-                title="📊 P&L by Stock",
-                template="plotly_dark",
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                height=300,
-                margin=dict(l=20, r=20, t=40, b=20),
-                showlegend=False,
-                yaxis=dict(gridcolor='rgba(255,255,255,0.05)')
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            # Pie Chart Premium
-            wins = (df_open['P&L'] > 0).sum()
-            losses = (df_open['P&L'] < 0).sum()
+            with col2:
+                # Pie Chart Win/Loss
+                wins = (df_open['P&L'] > 0).sum()
+                losses = (df_open['P&L'] < 0).sum()
+                
+                if wins + losses > 0:
+                    fig = go.Figure(data=[go.Pie(
+                        labels=['WIN', 'LOSS'],
+                        values=[wins, losses],
+                        marker_colors=['#2ECC71', '#E74C3C'],
+                        textinfo='label+percent',
+                        hole=0.4
+                    )])
+                    
+                    fig.update_layout(
+                        title="🎯 Win/Loss Ratio",
+                        template="plotly_dark",
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        height=300,
+                        margin=dict(l=20, r=20, t=40, b=20)
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
             
-            fig = go.Figure(data=[go.Pie(
-                labels=['WINNING', 'LOSING'],
-                values=[wins, losses],
-                marker_colors=['#10B981', '#EF4444'],
-                textinfo='label+percent',
-                textfont=dict(size=12, color='white'),
-                hole=0.4,
-                pull=[0.02, 0]
-            )])
+            # Risk Metrics
+            st.divider()
+            st.subheader("📊 RISK METRICS")
             
-            fig.update_layout(
-                title="🎯 Win/Loss Ratio",
-                template="plotly_dark",
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                height=300,
-                margin=dict(l=20, r=20, t=40, b=20),
-                annotations=[dict(text=f'{wins+losses} Total', x=0.5, y=0.5, font=dict(size=14, color='white'))]
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                volatility = df_open['Change %'].std() if len(df_open) > 1 else 0
+                st.metric("Volatility", f"{volatility:.2f}%")
+            with col2:
+                avg_return = df_open['Change %'].mean()
+                st.metric("Avg Return", f"{avg_return:.2f}%")
+            with col3:
+                max_loss = df_open['P&L'].min()
+                st.metric("Max Loss", f"Rp {max_loss:,.0f}")
+            with col4:
+                max_gain = df_open['P&L'].max()
+                st.metric("Max Gain", f"Rp {max_gain:,.0f}")
+        else:
+            st.info("Tidak ada posisi open untuk analitik")
     else:
-        st.info("No active positions for analytics")
+        st.info("Tambah transaksi untuk melihat analitik")
 
 # ==========================================
-# DELETE PREMIUM
+# DELETE
 # ==========================================
 with tabs[4]:
     st.subheader("🗑️ DELETE TRANSACTION")
     
     if not df.empty:
-        options = [f"{row['Stock Code']} • {row['Buy Date'].strftime('%d/%b/%y')} • Rp {row['Value (Buy)']:,.0f}" 
+        options = [f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y')} - Rp {row['Value (Buy)']:,.0f}" 
                   for _, row in df.iterrows()]
-        to_delete = st.selectbox("SELECT TO DELETE", options)
+        to_delete = st.selectbox("Pilih transaksi untuk dihapus:", options)
         
         if to_delete:
             idx = options.index(to_delete)
             row = df.iloc[idx]
             gsheet_row = idx + 2
             
-            st.warning(f"⚠️ Permanent deletion of **{row['Stock Code']}**")
+            st.warning(f"⚠️ PERMANENT DELETE: **{row['Stock Code']}**")
+            
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("🗑️ CONFIRM DELETE", use_container_width=True, type="primary"):
+                if st.button("🗑️ KONFIRMASI DELETE", use_container_width=True):
                     try:
                         worksheet.delete_rows(gsheet_row)
                         st.cache_data.clear()
-                        st.success("✅ Deleted")
+                        st.success("✅ Transaksi dihapus!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"❌ Error: {str(e)}")
             with col2:
-                if st.button("CANCEL", use_container_width=True):
+                if st.button("BATAL", use_container_width=True):
                     st.rerun()
     else:
-        st.info("No transactions to delete")
+        st.info("Belum ada transaksi untuk dihapus")
 
 # -----------------------------------------------------------------
-# FOOTER PREMIUM
+# FOOTER
 # -----------------------------------------------------------------
 st.divider()
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.caption(f"💼 {len(df) if not df.empty else 0} Transactions")
+    st.caption(f"📊 Total Transaksi: {len(df) if not df.empty else 0}")
 with col2:
-    st.caption(f"📊 {df['Stock Code'].nunique() if not df.empty else 0} Stocks")
+    st.caption(f"📈 Total Saham: {df['Stock Code'].nunique() if not df.empty else 0}")
 with col3:
-    st.caption(f"⚡ AlphaStock Pro v3.0")
+    st.caption(f"⚡ Last Update: {datetime.now().strftime('%H:%M:%S')}")
