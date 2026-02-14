@@ -6,12 +6,12 @@ from datetime import date, datetime
 import numpy as np
 
 # =========================================================================
-# MULTI-THEME SELECTOR (DILETAKKAN DI PALING ATAS)
+# MULTI-THEME SELECTOR (FIXED)
 # =========================================================================
 
 # Inisialisasi theme di session state
 if 'theme' not in st.session_state:
-    st.session_state.theme = 'Dark Korporat'
+    st.session_state.theme = '🌙 Dark Korporat'  # Gunakan key lengkap dengan emoji
 
 # Fungsi ganti theme
 def change_theme(theme_name):
@@ -75,10 +75,19 @@ with st.sidebar:
         }
     }
     
+    # FIX: Gunakan list(theme_options.keys()) untuk mendapatkan semua key
+    theme_keys = list(theme_options.keys())
+    
+    # Cari index theme yang aktif
+    if st.session_state.theme in theme_keys:
+        default_index = theme_keys.index(st.session_state.theme)
+    else:
+        default_index = 0  # Default ke index 0 jika tidak ditemukan
+    
     selected = st.selectbox(
         "Pilih Theme",
-        list(theme_options.keys()),
-        index=list(theme_options.keys()).index(st.session_state.theme),
+        theme_keys,
+        index=default_index,
         key="theme_selector"
     )
     
