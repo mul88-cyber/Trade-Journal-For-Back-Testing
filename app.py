@@ -471,7 +471,7 @@ with tabs[0]:
         
         # Pilih kolom untuk ditampilkan
         display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Value (Buy)', 
-                       'Possition', 'Current Price', 'Change %', 'P&L']
+                        'Possition', 'Current Price', 'Change %', 'P&L']
         df_display = df[display_cols].copy()
         
         # Format dates
@@ -484,20 +484,45 @@ with tabs[0]:
         df_display['P&L'] = df_display['P&L'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
         df_display['Change %'] = df_display['Change %'].apply(lambda x: f"{x:.1f}%")
         
+        # 1. Rename kolom agar judulnya rapi dan ada icon-nya
+        df_display = df_display.rename(columns={
+            "Buy Date": "📅 DATE",
+            "Stock Code": "📊 STOCK",
+            "Qty Lot": "🔢 LOT",
+            "Price (Buy)": "💰 BUY PRICE",
+            "Value (Buy)": "💵 VALUE",
+            "Possition": "📍 POS",
+            "Current Price": "💹 CURRENT",
+            "Change %": "📈 CHANGE",
+            "P&L": "💲 P&L"
+        })
+
+        # 2. Fungsi Logika Warna (Merah untuk Minus, Hijau untuk Plus)
+        def color_profit_loss(val):
+            try:
+                # Bersihkan teks (Hapus Rp, %, dan titik separator) untuk mengecek nilai aslinya
+                clean_val = str(val).replace('Rp', '').replace('%', '').replace('.', '').replace(',', '').strip()
+                num = float(clean_val)
+                if num > 0:
+                    return 'color: #2ECC71; font-weight: 700;' # Warna Hijau
+                elif num < 0:
+                    return 'color: #E74C3C; font-weight: 700;' # Warna Merah
+                else:
+                    return 'color: #BDC3C7;' # Warna Abu-abu jika 0
+            except:
+                return ''
+
+        # 3. Terapkan warna ke DataFrame Pandas
+        # (Menggunakan try-except untuk kompatibilitas versi Pandas baru & lama)
+        try:
+            styled_df = df_display.style.map(color_profit_loss, subset=['📈 CHANGE', '💲 P&L'])
+        except:
+            styled_df = df_display.style.applymap(color_profit_loss, subset=['📈 CHANGE', '💲 P&L'])
+
+        # 4. Tampilkan Tabel
         st.dataframe(
-            df_display,
+            styled_df,
             use_container_width=True,
-            column_config={
-                "Buy Date": "📅 DATE",
-                "Stock Code": "📊 STOCK",
-                "Qty Lot": "🔢 LOT",
-                "Price (Buy)": "💰 BUY PRICE",
-                "Value (Buy)": "💵 VALUE",
-                "Possition": "📍 POS",
-                "Current Price": "💹 CURRENT",
-                "Change %": "📈 CHANGE",
-                "P&L": "💲 P&L",
-            },
             hide_index=True,
             height=400
         )
