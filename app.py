@@ -353,22 +353,21 @@ COLUMNS = [
 @st.cache_resource(ttl=300)
 def get_gsheet_client():
     try:
-        if "gcp_service_account" not in st.secrets:
-            st.error("❌ Gagal: secrets 'gcp_service_account' tidak ditemukan!")
-            return None
+        # 1. Ambil rahasia dan paksa jadi dictionary murni
+        creds_info = st.secrets["gcp_service_account"]
+        if hasattr(creds_info, "to_dict"):
+            creds_info = creds_info.to_dict()
+        else:
+            creds_info = dict(creds_info)
+
+        # 2. Buat credentials
+        creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
         
-        # Ambil credentials
-        creds_dict = dict(st.secrets["gcp_service_account"]) # Pastikan diconvert ke dict murni
-        
-        # Gunakan metode from_service_account_info
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-        
-        # Inisialisasi gspread
+        # 3. Authorize client
         client = gspread.authorize(creds)
-        
         return client
     except Exception as e:
-        st.error(f"🔴 Gagal koneksi: {str(e)}")
+        st.error(f"🔴 Gagal koneksi ke Google Sheets: {str(e)}")
         return None
         
         # Ambil credentials dari secrets
