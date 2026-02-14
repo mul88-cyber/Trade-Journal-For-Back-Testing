@@ -258,22 +258,47 @@ st.markdown("""
         background: #3498DB;
         border-radius: 10px;
     }
-    
-    /* MOBILE RESPONSIVE */
+    /* ===== MOBILE RESPONSIVENESS (KHUSUS HP) ===== */
     @media (max-width: 768px) {
-        .premium-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
+        /* Sesuaikan ukuran font judul agar tidak berantakan */
+        h1 { font-size: 1.8rem !important; }
+        h2 { font-size: 1.4rem !important; }
+        h3 { font-size: 1.1rem !important; }
         
-        .stTabs [data-baseweb="tab"] {
-            padding: 0.4rem 1rem !important;
-            font-size: 0.8rem !important;
+        /* Perkecil kotak metrik (Total Portfolio, dll) */
+        div[data-testid="metric-container"] {
+            padding: 12px !important;
+            margin-bottom: 10px !important;
         }
-        
         div[data-testid="metric-container"] div {
-            font-size: 1.2rem !important;
+            font-size: 1.3rem !important;
+        }
+        
+        /* Rapikan Tab Menu agar bisa digeser (swipe) ke samping */
+        .stTabs [data-baseweb="tab-list"] {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            gap: 15px !important;
+            padding-bottom: 5px !important;
+        }
+        .stTabs [data-baseweb="tab"] {
+            white-space: nowrap !important;
+            font-size: 0.85rem !important;
+            padding: 8px 0px !important;
+        }
+        
+        /* PENTING: Buat tabel bisa di-scroll ke kanan, bukan tergencet */
+        .stDataFrame {
+            overflow-x: auto !important;
+        }
+        .stDataFrame table {
+            min-width: 800px !important; 
+        }
+        
+        /* Tombol lebih compact */
+        .stButton>button {
+            padding: 8px 16px !important;
+            font-size: 0.9rem !important;
         }
     }
     </style>
