@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials
 import numpy as np
 
 # -----------------------------------------------------------------
-# KONFIGURASI HALAMAN & UI CUSTOM (LIGHT PROFESSIONAL THEME)
+# KONFIGURASI HALAMAN & UI CUSTOM (PREMIUM DEEP THEME dengan GLASSMORPHISM)
 # -----------------------------------------------------------------
 st.set_page_config(
     page_title="AlphaStock Professional", 
@@ -17,23 +17,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Premium Custom CSS dengan tema Light/Professional
+# Premium Custom CSS dengan Deep Theme & Glassmorphism
 st.markdown("""
     <style>
-    /* Main background dengan warna terang */
+    /* ===== MAIN BACKGROUND DEEP PREMIUM ===== */
     .stApp {
-        background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 50%, #FFFFFF 100%);
-        color: #0F172A;
+        background: linear-gradient(135deg, #0B1120 0%, #1A1F35 50%, #0F172A 100%);
+        color: #E2E8F0;
     }
     
-    /* Glassmorphism cards dengan efek transparan light */
+    /* ===== GLASSMORPHISM CARDS ===== */
     div[data-testid="stVerticalBlock"] > div {
-        background: rgba(255, 255, 255, 0.8) !important;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        border-radius: 20px;
-        padding: 20px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.02);
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    div[data-testid="stVerticalBlock"] > div:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        border-color: rgba(255, 255, 255, 0.1);
     }
     
     /* Main container */
@@ -43,68 +51,88 @@ st.markdown("""
     
     /* Block container */
     .st-emotion-cache-1r6slb0, .st-emotion-cache-12w0qpk {
-        background: rgba(255, 255, 255, 0.7) !important;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 20px;
+        background: rgba(30, 41, 59, 0.4) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        border-radius: 24px;
         padding: 24px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
     }
     
-    /* Premium typography - gradient untuk headings */
+    /* ===== PREMIUM TYPOGRAPHY ===== */
     h1, h2, h3 {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         font-weight: 700;
         letter-spacing: -0.02em;
-        margin-bottom: 0.5rem !important;
+        margin-bottom: 1rem !important;
     }
     
     h1 {
-        font-size: 2.5rem !important;
-        background: linear-gradient(135deg, #2563EB 0%, #7C3AED 50%, #DB2777 100%);
+        font-size: 2.8rem !important;
+        background: linear-gradient(135deg, #818CF8 0%, #C084FC 30%, #F472B6 70%, #38BDF8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 30px rgba(129, 140, 248, 0.3);
     }
     
     h2 {
-        font-size: 2rem !important;
-        background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+        font-size: 2.2rem !important;
+        background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 50%, #F472B6 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     
     h3 {
         font-size: 1.5rem !important;
-        color: #1E293B !important;
-        background: none;
-        -webkit-text-fill-color: #1E293B;
+        color: #F0F9FF !important;
+        text-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
     }
     
     /* Regular text */
     p, li, .stMarkdown, .stText, span:not([class*="css"]) {
-        color: #334155 !important;
+        color: #CBD5E1 !important;
+        line-height: 1.6;
     }
     
-    /* Metric cards premium */
+    /* ===== PREMIUM METRIC CARDS ===== */
     div[data-testid="metric-container"] {
-        background: white !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 16px !important;
-        padding: 20px !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
-        transition: all 0.2s ease;
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.1)) !important;
+        border: 1px solid rgba(96, 165, 250, 0.15) !important;
+        border-radius: 20px !important;
+        padding: 24px !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    div[data-testid="metric-container"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left 0.5s ease;
+    }
+    
+    div[data-testid="metric-container"]:hover::before {
+        left: 100%;
     }
     
     div[data-testid="metric-container"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
-        border-color: #94A3B8 !important;
+        transform: translateY(-5px);
+        border-color: rgba(96, 165, 250, 0.4) !important;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
     }
     
     /* Metric label */
     div[data-testid="metric-container"] label {
-        color: #64748B !important;
-        font-size: 0.875rem !important;
+        color: #94A3B8 !important;
+        font-size: 0.9rem !important;
         font-weight: 500 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.05em !important;
@@ -112,141 +140,159 @@ st.markdown("""
     
     /* Metric value */
     div[data-testid="metric-container"] div {
-        color: #0F172A !important;
-        font-size: 1.875rem !important;
+        background: linear-gradient(135deg, #F0F9FF 0%, #E2E8F0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2rem !important;
         font-weight: 700 !important;
         line-height: 1.2 !important;
     }
     
-    /* Metric delta */
-    div[data-testid="metric-container"] [data-testid="stMetricDelta"] {
+    /* Metric delta positive */
+    div[data-testid="metric-container"] [data-testid="stMetricDelta"] [data-testid="stArrowUp"] {
         color: #10B981 !important;
-        font-size: 0.875rem !important;
     }
     
-    /* Tabs styling premium */
+    /* Metric delta negative */
+    div[data-testid="metric-container"] [data-testid="stMetricDelta"] [data-testid="stArrowDown"] {
+        color: #EF4444 !important;
+    }
+    
+    /* ===== PREMIUM TABS ===== */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
-        background: white;
+        gap: 6px;
+        background: rgba(15, 23, 42, 0.6);
         padding: 6px;
-        border-radius: 14px;
-        border: 1px solid #E2E8F0;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-        margin-bottom: 24px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        margin-bottom: 30px;
     }
     
     .stTabs [data-baseweb="tab"] {
         background: transparent;
-        border-radius: 10px;
-        padding: 8px 16px;
-        color: #64748B;
+        border-radius: 12px;
+        padding: 10px 20px;
+        color: #94A3B8;
         font-weight: 600;
         font-size: 0.95rem;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #F0F9FF;
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(255, 255, 255, 0.05);
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #2563EB, #7C3AED) !important;
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6) !important;
         color: white !important;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
-    /* Button styling premium */
+    /* ===== PREMIUM BUTTONS ===== */
     .stButton>button {
-        background: linear-gradient(135deg, #2563EB, #7C3AED);
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
         color: white;
         border: none;
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 12px 24px;
         font-weight: 600;
         font-size: 0.95rem;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 20px -10px #3B82F6;
         border: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stButton>button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+    
+    .stButton>button:hover::before {
+        left: 100%;
     }
     
     .stButton>button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-    }
-    
-    .stButton>button:active {
-        transform: translateY(0);
+        box-shadow: 0 20px 30px -10px #3B82F6;
     }
     
     /* Secondary button */
     .stButton>button[kind="secondary"] {
-        background: white;
-        color: #2563EB;
-        border: 1px solid #E2E8F0;
+        background: rgba(255, 255, 255, 0.03);
+        color: #F0F9FF;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: none;
     }
     
     .stButton>button[kind="secondary"]:hover {
-        background: #F8FAFC;
-        border-color: #2563EB;
+        background: rgba(255, 255, 255, 0.05);
+        border-color: #3B82F6;
     }
     
-    /* Input fields premium */
+    /* ===== PREMIUM INPUT FIELDS ===== */
     div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
-        background: white !important;
-        border: 2px solid #E2E8F0 !important;
-        border-radius: 12px !important;
-        transition: all 0.2s ease;
+        background: rgba(30, 41, 59, 0.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 14px !important;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
     
     div[data-baseweb="input"]:hover, div[data-baseweb="select"]:hover {
-        border-color: #94A3B8 !important;
+        border-color: #3B82F6 !important;
+        background: rgba(30, 41, 59, 0.7) !important;
     }
     
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within {
-        border-color: #2563EB !important;
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+        border-color: #8B5CF6 !important;
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2) !important;
     }
     
     /* Input text */
     input, select, textarea {
-        color: #0F172A !important;
+        color: #F0F9FF !important;
         font-size: 1rem !important;
-        padding: 10px 14px !important;
+        padding: 12px 16px !important;
+        background: transparent !important;
     }
     
     /* Input label */
     .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {
-        color: #475569 !important;
+        color: #94A3B8 !important;
         font-weight: 600 !important;
         font-size: 0.9rem !important;
-        margin-bottom: 4px !important;
+        margin-bottom: 6px !important;
     }
     
     /* Placeholder */
     input::placeholder, textarea::placeholder {
-        color: #94A3B8 !important;
+        color: #475569 !important;
         font-size: 0.95rem !important;
     }
     
-    /* Select box */
-    .stSelectbox div[data-baseweb="select"] div {
-        color: #0F172A !important;
-    }
-    
-    /* Date input */
-    .stDateInput div[data-baseweb="input"] {
-        background: white !important;
-    }
-    
-    /* Number input */
-    .stNumberInput div[data-baseweb="input"] {
-        background: white !important;
-    }
-    
-    /* Dataframe styling premium */
+    /* ===== PREMIUM DATAFRAME dengan COLOR SCALE ===== */
     .stDataFrame {
-        background: white;
-        border-radius: 16px;
-        border: 1px solid #E2E8F0;
+        background: rgba(15, 23, 42, 0.4);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
         overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
     
     .stDataFrame [data-testid="stDataFrame"] {
@@ -257,296 +303,290 @@ st.markdown("""
     .stDataFrame table {
         border-collapse: separate;
         border-spacing: 0;
+        width: 100%;
     }
     
+    /* Table header */
     .stDataFrame th {
-        background: #F8FAFC;
-        color: #2563EB !important;
+        background: rgba(59, 130, 246, 0.2) !important;
+        color: #F0F9FF !important;
         font-weight: 700 !important;
         font-size: 0.85rem !important;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        padding: 12px 16px !important;
-        border-bottom: 2px solid #E2E8F0 !important;
-    }
-    
-    .stDataFrame td {
-        color: #1E293B !important;
-        padding: 12px 16px !important;
-        border-bottom: 1px solid #F1F5F9 !important;
-    }
-    
-    .stDataFrame tr:hover td {
-        background: #F8FAFC !important;
-    }
-    
-    /* Alert/Message styling */
-    .stAlert {
-        background: white !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 12px !important;
         padding: 16px !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        border-bottom: 2px solid rgba(59, 130, 246, 0.3) !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
     
-    /* Success message */
-    div[data-baseweb="notification"]:has([data-testid="stNotification-success"]) {
-        background: #F0FDF4 !important;
-        border-color: #86EFAC !important;
+    /* Table cells */
+    .stDataFrame td {
+        color: #CBD5E1 !important;
+        padding: 14px 16px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+        transition: background-color 0.2s ease;
     }
     
+    /* Hover effect */
+    .stDataFrame tr:hover td {
+        background: rgba(59, 130, 246, 0.1) !important;
+    }
+    
+    /* Color scale untuk kolom numerik */
+    /* P&L Positive - Hijau gradient */
+    .stDataFrame td:nth-child(11), /* P&L column */
+    .stDataFrame td:nth-child(13) { /* P&L Custom column */
+        background: linear-gradient(90deg, 
+            rgba(16, 185, 129, 0.1) 0%, 
+            rgba(16, 185, 129, 0.2) 50%, 
+            rgba(16, 185, 129, 0.1) 100%);
+        font-weight: 600;
+    }
+    
+    /* P&L based coloring - ini akan di-handle oleh Streamlit secara dinamis */
+    
+    /* Change % column */
+    .stDataFrame td:nth-child(10), /* Change % */
+    .stDataFrame td:nth-child(12) { /* Change % Custom */
+        font-weight: 600;
+    }
+    
+    /* Price columns */
+    .stDataFrame td:nth-child(3), /* Price Buy */
+    .stDataFrame td:nth-child(6), /* Current Price */
+    .stDataFrame td:nth-child(8) { /* Custom Price */
+        color: #FCD34D !important;
+        font-weight: 500;
+    }
+    
+    /* ===== CUSTOM COLOR SCALE DENGAN JAVASCRIPT ===== */
+    </style>
+    
+    <script>
+    // JavaScript untuk menambahkan color scale pada tabel
+    function addColorScale() {
+        const tables = document.querySelectorAll('.stDataFrame table');
+        tables.forEach(table => {
+            // Cek apakah sudah diproses
+            if (table.classList.contains('color-scale-processed')) return;
+            table.classList.add('color-scale-processed');
+            
+            // Proses setiap baris
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                
+                // Color scale untuk P&L (kolom ke-11)
+                if (cells.length >= 11) {
+                    const pnlCell = cells[10]; // P&L column
+                    const pnlValue = parseFloat(pnlCell.textContent.replace(/[^0-9-]/g, ''));
+                    
+                    if (!isNaN(pnlValue)) {
+                        if (pnlValue > 0) {
+                            // Hijau untuk positif
+                            const intensity = Math.min(pnlValue / 1000000, 0.3);
+                            pnlCell.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${intensity}), rgba(16, 185, 129, ${intensity * 0.5}))`;
+                            pnlCell.style.color = '#A7F3D0';
+                        } else if (pnlValue < 0) {
+                            // Merah untuk negatif
+                            const intensity = Math.min(Math.abs(pnlValue) / 1000000, 0.3);
+                            pnlCell.style.background = `linear-gradient(90deg, rgba(239, 68, 68, ${intensity}), rgba(239, 68, 68, ${intensity * 0.5}))`;
+                            pnlCell.style.color = '#FECACA';
+                        }
+                    }
+                }
+                
+                // Color scale untuk Change % (kolom ke-10)
+                if (cells.length >= 10) {
+                    const changeCell = cells[9]; // Change % column
+                    const changeValue = parseFloat(changeCell.textContent.replace(/[^0-9.-]/g, ''));
+                    
+                    if (!isNaN(changeValue)) {
+                        if (changeValue > 0) {
+                            const intensity = Math.min(changeValue / 10, 0.3);
+                            changeCell.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${intensity}), rgba(16, 185, 129, ${intensity * 0.5}))`;
+                            changeCell.style.color = '#A7F3D0';
+                        } else if (changeValue < 0) {
+                            const intensity = Math.min(Math.abs(changeValue) / 10, 0.3);
+                            changeCell.style.background = `linear-gradient(90deg, rgba(239, 68, 68, ${intensity}), rgba(239, 68, 68, ${intensity * 0.5}))`;
+                            changeCell.style.color = '#FECACA';
+                        }
+                    }
+                }
+            });
+        });
+    }
+    
+    // Jalankan saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', addColorScale);
+    
+    // Jalankan juga saat ada perubahan
+    const observer = new MutationObserver(addColorScale);
+    observer.observe(document.body, { childList: true, subtree: true });
+    </script>
+    
+    <style>
+    /* ===== ALERT MESSAGES PREMIUM ===== */
+    .stAlert {
+        background: rgba(15, 23, 42, 0.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+    
+    /* Success */
     .stAlert.success {
-        background: #F0FDF4 !important;
-        border-left: 4px solid #22C55E !important;
+        border-left: 4px solid #10B981 !important;
     }
     
     .stAlert.success p {
-        color: #166534 !important;
+        color: #D1FAE5 !important;
     }
     
-    /* Error message */
+    /* Error */
     .stAlert.error {
-        background: #FEF2F2 !important;
         border-left: 4px solid #EF4444 !important;
     }
     
     .stAlert.error p {
-        color: #991B1B !important;
+        color: #FEE2E2 !important;
     }
     
-    /* Warning message */
+    /* Warning */
     .stAlert.warning {
-        background: #FFFBEB !important;
         border-left: 4px solid #F59E0B !important;
     }
     
     .stAlert.warning p {
-        color: #92400E !important;
+        color: #FEF3C7 !important;
     }
     
-    /* Info message */
+    /* Info */
     .stAlert.info {
-        background: #EFF6FF !important;
         border-left: 4px solid #3B82F6 !important;
     }
     
     .stAlert.info p {
-        color: #1E40AF !important;
+        color: #DBEAFE !important;
     }
     
-    /* Sidebar styling premium */
+    /* ===== SIDEBAR PREMIUM ===== */
     section[data-testid="stSidebar"] {
-        background: white !important;
-        border-right: 1px solid #E2E8F0;
-        box-shadow: 4px 0 6px -1px rgba(0, 0, 0, 0.02);
+        background: rgba(15, 23, 42, 0.8) !important;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-right: 1px solid rgba(255, 255, 255, 0.03);
     }
     
     section[data-testid="stSidebar"] > div {
-        background: white !important;
+        background: transparent !important;
         padding: 24px 16px;
     }
     
     /* Sidebar text */
     section[data-testid="stSidebar"] .stMarkdown p {
-        color: #334155 !important;
+        color: #CBD5E1 !important;
     }
     
     section[data-testid="stSidebar"] .stMarkdown h1,
     section[data-testid="stSidebar"] .stMarkdown h2,
     section[data-testid="stSidebar"] .stMarkdown h3 {
-        color: #0F172A !important;
-        -webkit-text-fill-color: #0F172A !important;
-        background: none;
+        background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
     
-    /* Sidebar menu items */
-    section[data-testid="stSidebar"] .stButton>button {
-        background: transparent;
-        color: #475569;
-        box-shadow: none;
-        border: 1px solid #E2E8F0;
-        text-align: left;
-        justify-content: flex-start;
-    }
-    
-    section[data-testid="stSidebar"] .stButton>button:hover {
-        background: #F8FAFC;
-        border-color: #2563EB;
-        color: #2563EB;
-    }
-    
-    /* Divider */
+    /* ===== DIVIDER ===== */
     hr {
-        border-color: #E2E8F0 !important;
-        margin: 24px 0 !important;
+        background: linear-gradient(90deg, transparent, #3B82F6, #8B5CF6, #3B82F6, transparent) !important;
+        height: 2px !important;
+        border: none !important;
+        margin: 30px 0 !important;
     }
     
-    /* Expander */
+    /* ===== EXPANDER ===== */
     .streamlit-expanderHeader {
-        background: white !important;
-        color: #2563EB !important;
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: #F0F9FF !important;
         font-weight: 600 !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 12px !important;
-        padding: 12px 16px !important;
+        border: 1px solid rgba(59, 130, 246, 0.2) !important;
+        border-radius: 14px !important;
+        padding: 14px 18px !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
     
     .streamlit-expanderHeader:hover {
-        background: #F8FAFC !important;
+        background: rgba(59, 130, 246, 0.15) !important;
     }
     
     .streamlit-expanderContent {
-        background: white !important;
-        border: 1px solid #E2E8F0 !important;
+        background: rgba(15, 23, 42, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.03) !important;
         border-top: none !important;
-        border-radius: 0 0 12px 12px !important;
-        padding: 16px !important;
+        border-radius: 0 0 14px 14px !important;
+        padding: 20px !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
     
-    /* Checkbox */
+    /* ===== CHECKBOX & RADIO ===== */
     .stCheckbox label {
-        color: #334155 !important;
+        color: #CBD5E1 !important;
     }
     
     .stCheckbox div[data-baseweb="checkbox"] {
-        border-color: #94A3B8 !important;
+        border-color: #475569 !important;
+        background: rgba(30, 41, 59, 0.5) !important;
     }
     
     .stCheckbox div[data-baseweb="checkbox"]:checked {
-        background: #2563EB !important;
-        border-color: #2563EB !important;
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6) !important;
+        border-color: transparent !important;
     }
     
-    /* Radio button */
-    .stRadio label {
-        color: #334155 !important;
-    }
-    
-    .stRadio div[data-baseweb="radio"] {
-        border-color: #94A3B8 !important;
-    }
-    
-    .stRadio div[data-baseweb="radio"]:checked {
-        background: #2563EB !important;
-        border-color: #2563EB !important;
-    }
-    
-    /* Multiselect */
-    .stMultiSelect div[data-baseweb="select"] {
-        background: white !important;
-        border: 2px solid #E2E8F0 !important;
-        border-radius: 12px !important;
-    }
-    
-    .stMultiSelect div[data-baseweb="select"]:hover {
-        border-color: #94A3B8 !important;
-    }
-    
-    .stMultiSelect div[data-baseweb="select"]:focus-within {
-        border-color: #2563EB !important;
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
-    }
-    
-    /* Progress bar */
+    /* ===== PROGRESS BAR ===== */
     .stProgress > div > div {
-        background: linear-gradient(90deg, #2563EB, #7C3AED) !important;
+        background: linear-gradient(90deg, #3B82F6, #8B5CF6, #F472B6) !important;
     }
     
-    /* Spinner */
+    /* ===== SPINNER ===== */
     .stSpinner > div {
-        border-color: #2563EB transparent #2563EB transparent !important;
+        border-color: #3B82F6 transparent #8B5CF6 transparent !important;
     }
     
-    /* Caption/small text */
-    .stCaption, small, .stSmall, .stMarkdown small {
-        color: #64748B !important;
-        font-size: 0.8rem !important;
-    }
-    
-    /* Link */
-    a {
-        color: #2563EB !important;
-        text-decoration: none !important;
-        font-weight: 500 !important;
-    }
-    
-    a:hover {
-        text-decoration: underline !important;
-    }
-    
-    /* Code block */
-    code {
-        background: #F1F5F9 !important;
-        color: #DB2777 !important;
-        padding: 2px 6px !important;
-        border-radius: 6px !important;
-        font-size: 0.9em !important;
-    }
-    
-    /* Tooltip */
-    [data-testid="stTooltip"] {
-        background: white !important;
-        color: #0F172A !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 8px !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-    }
-    
-    /* Animations */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .element-container, div[data-testid="stVerticalBlock"] > div {
-        animation: fadeIn 0.5s ease-out;
-    }
-    
-    /* Scrollbar styling premium */
+    /* ===== SCROLLBAR PREMIUM ===== */
     ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
     }
     
     ::-webkit-scrollbar-track {
-        background: #F1F5F9;
+        background: rgba(15, 23, 42, 0.5);
         border-radius: 5px;
     }
     
     ::-webkit-scrollbar-thumb {
-        background: #94A3B8;
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
         border-radius: 5px;
-        border: 2px solid #F1F5F9;
+        border: 2px solid rgba(15, 23, 42, 0.5);
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: #64748B;
+        background: linear-gradient(135deg, #60A5FA, #A78BFA);
     }
     
-    /* Loading states */
-    .stLoading {
-        background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
-    }
-    
-    /* Print styles */
-    @media print {
-        .stApp {
-            background: white !important;
-        }
-        
-        section[data-testid="stSidebar"] {
-            display: none !important;
-        }
-    }
-    
-    /* Mobile responsiveness */
+    /* ===== MOBILE RESPONSIVENESS ===== */
     @media (max-width: 768px) {
         h1 {
-            font-size: 1.8rem !important;
+            font-size: 2rem !important;
         }
         
         h2 {
-            font-size: 1.5rem !important;
+            font-size: 1.6rem !important;
         }
         
         h3 {
@@ -554,21 +594,70 @@ st.markdown("""
         }
         
         div[data-testid="metric-container"] {
-            padding: 12px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
         }
         
         div[data-testid="metric-container"] div {
-            font-size: 1.5rem !important;
+            font-size: 1.6rem !important;
+        }
+        
+        .stTabs [data-baseweb="tab-list"] {
+            flex-wrap: wrap;
         }
         
         .stTabs [data-baseweb="tab"] {
-            padding: 6px 12px !important;
+            padding: 8px 12px !important;
             font-size: 0.8rem !important;
+            flex: 1 1 auto;
         }
         
         .stButton>button {
-            padding: 8px 16px !important;
+            padding: 10px 16px !important;
+            font-size: 0.9rem !important;
         }
+        
+        /* Table horizontal scroll for mobile */
+        .stDataFrame {
+            overflow-x: auto;
+        }
+        
+        .stDataFrame table {
+            min-width: 800px;
+        }
+        
+        /* Stack columns on mobile */
+        div[data-testid="column"] {
+            width: 100% !important;
+            min-width: 100% !important;
+        }
+    }
+    
+    /* ===== ANIMATIONS ===== */
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0px); }
+    }
+    
+    @keyframes glow {
+        0% { box-shadow: 0 0 5px #3B82F6; }
+        50% { box-shadow: 0 0 20px #8B5CF6; }
+        100% { box-shadow: 0 0 5px #3B82F6; }
+    }
+    
+    .element-container, div[data-testid="stVerticalBlock"] > div {
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Glow effect for important elements */
+    div[data-testid="metric-container"]:first-child {
+        animation: glow 3s infinite;
     }
     </style>
     """, unsafe_allow_html=True)
