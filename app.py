@@ -77,10 +77,10 @@ def get_gsheet_client():
     client = gspread.authorize(creds)
     return client
 
-@st.cache_data(ttl=15) # Cache 15 detik agar data GFinance lebih sering ter-refresh
+@st.cache_data(ttl=15)
 def load_data(_client):
     try:
-        spreadsheet = _client.open("Trade Journal") # Pastikan nama file GSheet benar
+        spreadsheet = _client.open("Trade Journal")
         worksheet = spreadsheet.worksheet("IDX")
         
         data = worksheet.get_all_values()
@@ -89,19 +89,21 @@ def load_data(_client):
             
         df = pd.DataFrame(data[1:], columns=COLUMNS)
         
+        # --- FILTER BARIS KOSONG ---
+        # Hanya ambil baris yang kolom 'Stock Code'-nya tidak kosong
+        df = df[df['Stock Code'].astype(str).str.strip() != '']
+        
         # --- FUNGSI CLEANING PINTAR ---
-        # Menghapus Rp, koma, spasi, dan %. Jika ada #N/A, jadikan 0 agar tidak error.
         def clean_number(x):
             if isinstance(x, str):
                 x = x.replace('Rp', '').replace(',', '').replace(' ', '').replace('%', '').strip()
-                if x == '#N/A' or x == '' or x == '#ERROR!':
+                if x == '#N/A' or x == '' or x == '#ERROR!' or x == 'No Data':
                     return 0.0
             try:
                 return float(x)
             except:
                 return 0.0
 
-        # Terapkan cleaning ke kolom angka dan persentase
         numeric_cols = [
             "Price (Buy)", "Value (Buy)", "Current Price", "Custom Price", 
             "P&L", "P&L (Custom)", "Change %", "Change % (Custom)"
