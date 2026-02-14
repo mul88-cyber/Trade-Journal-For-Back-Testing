@@ -147,7 +147,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
     
-    /* DATAFRAME PREMIUM dengan COLOR SCALE */
+    /* DATAFRAME PREMIUM dengan COLOR SCALE VIBRANT */
     .stDataFrame {
         background: rgba(15, 23, 42, 0.3);
         backdrop-filter: blur(8px);
@@ -178,6 +178,7 @@ st.markdown("""
         padding: 0.6rem 1rem !important;
         border-bottom: 1px solid rgba(255,255,255,0.02) !important;
         font-size: 0.9rem !important;
+        transition: all 0.2s ease;
     }
     
     .stDataFrame tr:hover td {
@@ -299,7 +300,7 @@ st.markdown("""
     </style>
     
     <script>
-    // COLOR SCALE PREMIUM UNTUK TABEL
+    // PREMIUM COLOR SCALE UNTUK TABEL - VIBRANT VERSION
     function applyPremiumColorScale() {
         const tables = document.querySelectorAll('.stDataFrame table');
         tables.forEach(table => {
@@ -307,51 +308,95 @@ st.markdown("""
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 
-                // P&L Column (index 11)
-                if (cells.length >= 12) {
-                    const pnlCell = cells[11];
-                    const pnlText = pnlCell?.textContent || '';
-                    const pnlValue = parseFloat(pnlText.replace(/[^0-9-]/g, ''));
+                // Pastikan ada cukup kolom
+                if (cells.length < 12) return;
+                
+                // ===== KOLOM P&L (index 11) =====
+                const pnlCell = cells[11];
+                const pnlText = pnlCell?.textContent || '';
+                const pnlValue = parseFloat(pnlText.replace(/[^0-9-]/g, ''));
+                
+                if (!isNaN(pnlValue)) {
+                    // Reset style
+                    pnlCell.style.background = '';
+                    pnlCell.style.color = '';
+                    pnlCell.style.fontWeight = '';
+                    pnlCell.style.textShadow = '';
                     
-                    if (!isNaN(pnlValue)) {
-                        if (pnlValue > 0) {
-                            pnlCell.style.background = 'linear-gradient(90deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.05))';
-                            pnlCell.style.color = '#A7F3D0';
-                            pnlCell.style.fontWeight = '700';
-                            pnlCell.style.textShadow = '0 0 10px rgba(16,185,129,0.3)';
-                        } else if (pnlValue < 0) {
-                            pnlCell.style.background = 'linear-gradient(90deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.05))';
-                            pnlCell.style.color = '#FECACA';
-                            pnlCell.style.fontWeight = '700';
-                            pnlCell.style.textShadow = '0 0 10px rgba(239,68,68,0.3)';
-                        }
+                    if (pnlValue > 0) {
+                        // POSITIVE - HIJAU VIBRANT
+                        const intensity = Math.min(pnlValue / 1000000, 0.4);
+                        pnlCell.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${0.3 + intensity}), rgba(16, 185, 129, 0.1))`;
+                        pnlCell.style.color = '#D1FAE5';
+                        pnlCell.style.fontWeight = '700';
+                        pnlCell.style.textShadow = '0 0 8px rgba(16,185,129,0.5)';
+                    } else if (pnlValue < 0) {
+                        // NEGATIVE - MERAH VIBRANT
+                        const intensity = Math.min(Math.abs(pnlValue) / 1000000, 0.4);
+                        pnlCell.style.background = `linear-gradient(90deg, rgba(239, 68, 68, ${0.3 + intensity}), rgba(239, 68, 68, 0.1))`;
+                        pnlCell.style.color = '#FEE2E2';
+                        pnlCell.style.fontWeight = '700';
+                        pnlCell.style.textShadow = '0 0 8px rgba(239,68,68,0.5)';
                     }
                 }
                 
-                // Change % Column (index 10)
-                if (cells.length >= 11) {
-                    const changeCell = cells[10];
-                    const changeText = changeCell?.textContent || '';
-                    const changeValue = parseFloat(changeText.replace(/[^0-9.-]/g, ''));
-                    
-                    if (!isNaN(changeValue)) {
-                        if (changeValue > 0) {
-                            changeCell.style.color = '#A7F3D0';
-                            changeCell.style.fontWeight = '600';
-                        } else if (changeValue < 0) {
-                            changeCell.style.color = '#FECACA';
-                            changeCell.style.fontWeight = '600';
-                        }
+                // ===== KOLOM CHANGE % (index 10) =====
+                const changeCell = cells[10];
+                const changeText = changeCell?.textContent || '';
+                const changeValue = parseFloat(changeText.replace(/[^0-9.-]/g, ''));
+                
+                if (!isNaN(changeValue)) {
+                    if (changeValue > 0) {
+                        changeCell.style.color = '#6EE7B7';
+                        changeCell.style.fontWeight = '600';
+                        changeCell.style.background = 'linear-gradient(90deg, rgba(16, 185, 129, 0.15), transparent)';
+                    } else if (changeValue < 0) {
+                        changeCell.style.color = '#FCA5A5';
+                        changeCell.style.fontWeight = '600';
+                        changeCell.style.background = 'linear-gradient(90deg, rgba(239, 68, 68, 0.15), transparent)';
                     }
                 }
+                
+                // ===== KOLOM PRICE BUY (index 3) =====
+                const priceCell = cells[3];
+                if (priceCell) {
+                    priceCell.style.color = '#FCD34D';
+                    priceCell.style.fontWeight = '500';
+                }
+                
+                // ===== KOLOM QTY LOT (index 2) =====
+                const lotCell = cells[2];
+                if (lotCell) {
+                    lotCell.style.color = '#93C5FD';
+                    lotCell.style.fontWeight = '500';
+                }
+            });
+            
+            // Header styling
+            const headers = table.querySelectorAll('th');
+            headers.forEach(header => {
+                header.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))';
+                header.style.color = '#F0F9FF';
+                header.style.fontWeight = '700';
+                header.style.fontSize = '0.8rem';
+                header.style.textTransform = 'uppercase';
+                header.style.letterSpacing = '0.05em';
             });
         });
     }
     
     // Run on load and observe changes
-    document.addEventListener('DOMContentLoaded', applyPremiumColorScale);
-    const observer = new MutationObserver(applyPremiumColorScale);
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(applyPremiumColorScale, 500); // Delay untuk pastikan table sudah render
+    });
+    
+    const observer = new MutationObserver(function() {
+        setTimeout(applyPremiumColorScale, 100);
+    });
     observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Run also when table updates
+    setInterval(applyPremiumColorScale, 2000);
     </script>
     """, unsafe_allow_html=True)
 
@@ -460,20 +505,26 @@ with tabs[0]:
         # METRICS PREMIUM
         cols = st.columns(4)
         with cols[0]:
-            st.metric("TOTAL PORTFOLIO", f"Rp {df_open['Value (Buy)'].sum():,.0f}")
+            total_val = df_open['Value (Buy)'].sum()
+            st.metric("💰 TOTAL PORTFOLIO", f"Rp {total_val:,.0f}")
         with cols[1]:
             pnl = df_open['P&L'].sum()
-            st.metric("REALIZED P&L", f"Rp {pnl:,.0f}", 
-                     delta=f"{pnl/df_open['Value (Buy)'].sum()*100:.1f}%" if df_open['Value (Buy)'].sum() > 0 else None)
+            pnl_pct = (pnl/total_val*100) if total_val > 0 else 0
+            delta_color = "normal" if pnl >= 0 else "inverse"
+            st.metric("📈 REALIZED P&L", f"Rp {pnl:,.0f}", 
+                     delta=f"{pnl_pct:.1f}%", delta_color="normal")
         with cols[2]:
-            win_rate = (df_open[df_open['P&L'] > 0].shape[0] / df_open.shape[0] * 100) if not df_open.empty else 0
-            st.metric("WIN RATE", f"{win_rate:.1f}%")
+            win_count = (df_open['P&L'] > 0).sum()
+            total_count = len(df_open)
+            win_rate = (win_count/total_count*100) if total_count > 0 else 0
+            st.metric("🎯 WIN RATE", f"{win_rate:.1f}%", 
+                     delta=f"{win_count}/{total_count} trades")
         with cols[3]:
-            st.metric("ACTIVE POSITIONS", f"{len(df_open)}")
+            st.metric("📊 ACTIVE", f"{len(df_open)} positions")
         
         st.divider()
         
-        # TABLE PREMIUM dengan COLOR SCALE
+        # TABLE PREMIUM dengan COLOR SCALE VIBRANT
         st.subheader("📋 TRANSACTIONS")
         
         display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Position', 'Change %', 'P&L']
@@ -482,21 +533,35 @@ with tabs[0]:
         df_display['Change %'] = df_display['Change %'].round(1)
         df_display['P&L'] = df_display['P&L'].round(0)
         
+        # Tambah styling dengan column config
         st.dataframe(
             df_display,
             use_container_width=True,
             column_config={
-                "Buy Date": "DATE",
-                "Stock Code": "STOCK",
-                "Qty Lot": "LOT",
-                "Price (Buy)": st.column_config.NumberColumn("BUY PRICE", format="Rp %d"),
-                "Position": "POS",
-                "Change %": st.column_config.NumberColumn("CHG %", format="%.1f %%"),
-                "P&L": st.column_config.NumberColumn("P&L", format="Rp %d"),
+                "Buy Date": "📅 DATE",
+                "Stock Code": "📊 STOCK",
+                "Qty Lot": "🔢 LOT",
+                "Price (Buy)": st.column_config.NumberColumn("💰 BUY PRICE", format="Rp %d"),
+                "Position": "📍 POS",
+                "Change %": st.column_config.NumberColumn("📈 CHG %", format="%.1f %%"),
+                "P&L": st.column_config.NumberColumn("💵 P&L", format="Rp %d"),
             },
             hide_index=True,
-            height=350
+            height=400
         )
+        
+        # Summary row
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            total_pnl = df['P&L'].sum()
+            st.info(f"💰 Total P&L: **Rp {total_pnl:,.0f}**")
+        with col2:
+            winning_trades = (df['P&L'] > 0).sum()
+            st.info(f"✅ Winning Trades: **{winning_trades}**")
+        with col3:
+            losing_trades = (df['P&L'] < 0).sum()
+            st.info(f"❌ Losing Trades: **{losing_trades}**")
+            
     else:
         st.info("✨ Belum ada transaksi. Mulai dengan tab ENTRY")
 
@@ -641,7 +706,7 @@ with tabs[3]:
                 paper_bgcolor='rgba(0,0,0,0)',
                 height=300,
                 margin=dict(l=20, r=20, t=40, b=20),
-                annotations=[dict(text=f'{wins+losses} Total', x=0.5, y=0.5, font=dict(size=14))]
+                annotations=[dict(text=f'{wins+losses} Total', x=0.5, y=0.5, font=dict(size=14, color='white'))]
             )
             st.plotly_chart(fig, use_container_width=True)
     else:
