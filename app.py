@@ -626,8 +626,10 @@ with tabs[2]:
     
     if not df.empty:
         # Pilih transaksi
-        options = [f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y')} - {format_rupiah(row['Price (Buy)'])}" 
-                  for _, row in df.iterrows()]
+        options = [
+            f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'} - {format_rupiah(row['Price (Buy)'])}" 
+            for _, row in df.iterrows()
+        ]
         selected = st.selectbox("Pilih transaksi:", options)
         
         if selected:
@@ -767,8 +769,11 @@ with tabs[4]:
     st.subheader("🗑️ DELETE TRANSACTION")
     
     if not df.empty:
-        options = [f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y')} - {format_rupiah(row['Value (Buy)'])}" 
-                  for _, row in df.iterrows()]
+        # Pilih transaksi untuk dihapus (GANTI BAGIAN INI)
+        options = [
+            f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'} - {format_rupiah(row['Value (Buy)'])}" 
+            for _, row in df.iterrows()
+        ]
         to_delete = st.selectbox("Pilih transaksi untuk dihapus:", options)
         
         if to_delete:
