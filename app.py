@@ -137,7 +137,7 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* DATAFRAME KORPORAT dengan COLOR SCALE */
+    /* DATAFRAME KORPORAT - TIDAK SILAU */
     .stDataFrame {
         background: rgba(44, 62, 80, 0.3);
         backdrop-filter: blur(8px);
@@ -146,14 +146,19 @@ st.markdown("""
         overflow: hidden;
     }
     
+    .stDataFrame [data-testid="stDataFrame"] {
+        background: transparent !important;
+    }
+    
     .stDataFrame table {
         border-collapse: separate;
         border-spacing: 0;
         width: 100%;
+        background: transparent !important;
     }
     
     .stDataFrame th {
-        background: rgba(52, 73, 94, 0.5) !important;
+        background: rgba(52, 73, 94, 0.6) !important;
         color: #ECF0F1 !important;
         font-weight: 600 !important;
         font-size: 0.8rem !important;
@@ -164,6 +169,7 @@ st.markdown("""
     }
     
     .stDataFrame td {
+        background: rgba(44, 62, 80, 0.2) !important;
         color: #BDC3C7 !important;
         padding: 0.6rem 1rem !important;
         border-bottom: 1px solid rgba(255,255,255,0.02) !important;
@@ -172,7 +178,16 @@ st.markdown("""
     }
     
     .stDataFrame tr:hover td {
-        background: rgba(52, 73, 94, 0.3) !important;
+        background: rgba(52, 73, 94, 0.4) !important;
+    }
+    
+    /* Angka di tabel - separator ribuan */
+    .stDataFrame td:nth-child(4), /* Price Buy */
+    .stDataFrame td:nth-child(5), /* Value Buy */
+    .stDataFrame td:nth-child(7), /* Current Price */
+    .stDataFrame td:nth-child(9) { /* P&L */
+        font-family: 'Courier New', monospace !important;
+        font-weight: 500 !important;
     }
     
     /* BUTTON KORPORAT */
@@ -272,28 +287,28 @@ st.markdown("""
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 
-                // Kolom P&L (index 11)
-                if (cells.length >= 12) {
-                    const pnlCell = cells[11];
+                // Kolom P&L (index 8 - karena kita pilih 9 kolom)
+                if (cells.length >= 9) {
+                    const pnlCell = cells[8];
                     const pnlText = pnlCell?.textContent || '';
                     const pnlValue = parseFloat(pnlText.replace(/[^0-9-]/g, ''));
                     
                     if (!isNaN(pnlValue)) {
                         if (pnlValue > 0) {
-                            pnlCell.style.background = 'linear-gradient(90deg, rgba(46, 204, 113, 0.2), rgba(46, 204, 113, 0.05))';
+                            pnlCell.style.background = 'linear-gradient(90deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.02))';
                             pnlCell.style.color = '#2ECC71';
                             pnlCell.style.fontWeight = '600';
                         } else if (pnlValue < 0) {
-                            pnlCell.style.background = 'linear-gradient(90deg, rgba(231, 76, 60, 0.2), rgba(231, 76, 60, 0.05))';
+                            pnlCell.style.background = 'linear-gradient(90deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.02))';
                             pnlCell.style.color = '#E74C3C';
                             pnlCell.style.fontWeight = '600';
                         }
                     }
                 }
                 
-                // Kolom Change % (index 10)
-                if (cells.length >= 11) {
-                    const changeCell = cells[10];
+                // Kolom Change % (index 7)
+                if (cells.length >= 8) {
+                    const changeCell = cells[7];
                     const changeText = changeCell?.textContent || '';
                     const changeValue = parseFloat(changeText.replace(/[^0-9.-]/g, ''));
                     
@@ -413,6 +428,12 @@ if client:
 else:
     st.stop()
 
+# Format function untuk separator ribuan
+def format_rupiah(angka):
+    if pd.isna(angka) or angka == 0:
+        return "Rp 0"
+    return f"Rp {angka:,.0f}".replace(',', '.')
+
 # =========================================================================
 # TABS
 # =========================================================================
@@ -430,11 +451,11 @@ with tabs[0]:
         cols = st.columns(4)
         with cols[0]:
             total_val = df_open['Value (Buy)'].sum() if not df_open.empty else 0
-            st.metric("💰 TOTAL PORTFOLIO", f"Rp {total_val:,.0f}")
+            st.metric("💰 TOTAL PORTFOLIO", format_rupiah(total_val))
         with cols[1]:
             pnl = df_open['P&L'].sum() if not df_open.empty else 0
             pnl_pct = (pnl/total_val*100) if total_val > 0 else 0
-            st.metric("📈 UNREALIZED P&L", f"Rp {pnl:,.0f}", delta=f"{pnl_pct:.1f}%")
+            st.metric("📈 UNREALIZED P&L", format_rupiah(pnl), delta=f"{pnl_pct:.1f}%")
         with cols[2]:
             win_count = (df_open['P&L'] > 0).sum() if not df_open.empty else 0
             total_count = len(df_open)
@@ -448,6 +469,7 @@ with tabs[0]:
         # TABEL TRANSACTIONS
         st.subheader("📋 TRANSACTION HISTORY")
         
+        # Pilih kolom untuk ditampilkan
         display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Value (Buy)', 
                        'Possition', 'Current Price', 'Change %', 'P&L']
         df_display = df[display_cols].copy()
@@ -455,9 +477,12 @@ with tabs[0]:
         # Format dates
         df_display['Buy Date'] = df_display['Buy Date'].dt.strftime('%d/%m/%y')
         
-        # Format numbers
-        df_display['Change %'] = df_display['Change %'].round(1)
-        df_display['P&L'] = df_display['P&L'].round(0)
+        # Format numbers dengan separator ribuan
+        df_display['Price (Buy)'] = df_display['Price (Buy)'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
+        df_display['Value (Buy)'] = df_display['Value (Buy)'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
+        df_display['Current Price'] = df_display['Current Price'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
+        df_display['P&L'] = df_display['P&L'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
+        df_display['Change %'] = df_display['Change %'].apply(lambda x: f"{x:.1f}%")
         
         st.dataframe(
             df_display,
@@ -466,12 +491,12 @@ with tabs[0]:
                 "Buy Date": "📅 DATE",
                 "Stock Code": "📊 STOCK",
                 "Qty Lot": "🔢 LOT",
-                "Price (Buy)": st.column_config.NumberColumn("💰 BUY", format="Rp %d"),
-                "Value (Buy)": st.column_config.NumberColumn("💵 VALUE", format="Rp %d"),
+                "Price (Buy)": "💰 BUY PRICE",
+                "Value (Buy)": "💵 VALUE",
                 "Possition": "📍 POS",
-                "Current Price": st.column_config.NumberColumn("💹 CURRENT", format="Rp %d"),
-                "Change %": st.column_config.NumberColumn("📈 CHG %", format="%.1f %%"),
-                "P&L": st.column_config.NumberColumn("💲 P&L", format="Rp %d"),
+                "Current Price": "💹 CURRENT",
+                "Change %": "📈 CHANGE",
+                "P&L": "💲 P&L",
             },
             hide_index=True,
             height=400
@@ -481,7 +506,7 @@ with tabs[0]:
         col1, col2, col3 = st.columns(3)
         with col1:
             total_pnl = df['P&L'].sum()
-            st.info(f"💰 Total Realized P&L: **Rp {total_pnl:,.0f}**")
+            st.info(f"💰 Total Realized P&L: {format_rupiah(total_pnl)}")
         with col2:
             win_trades = (df['P&L'] > 0).sum()
             st.info(f"✅ Winning Trades: **{win_trades}**")
@@ -551,7 +576,7 @@ with tabs[2]:
     
     if not df.empty:
         # Pilih transaksi
-        options = [f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y')} - Rp {row['Price (Buy)']:,.0f}" 
+        options = [f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y')} - {format_rupiah(row['Price (Buy)'])}" 
                   for _, row in df.iterrows()]
         selected = st.selectbox("Pilih transaksi:", options)
         
@@ -560,7 +585,7 @@ with tabs[2]:
             row = df.iloc[idx]
             gsheet_row = idx + 2  # +2 karena header di baris 1
             
-            st.info(f"**Mengedit:** {row['Stock Code']} - Beli: Rp {row['Price (Buy)']:,.0f}")
+            st.info(f"**Mengedit:** {row['Stock Code']} - Beli: {format_rupiah(row['Price (Buy)'])}")
             
             col1, col2 = st.columns(2)
             
@@ -617,6 +642,7 @@ with tabs[3]:
                     marker_color=colors,
                     text=df_open['P&L'].apply(lambda x: f'Rp {x:,.0f}'),
                     textposition='outside',
+                    textfont=dict(size=10)
                 ))
                 
                 fig.update_layout(
@@ -626,7 +652,8 @@ with tabs[3]:
                     paper_bgcolor='rgba(0,0,0,0)',
                     height=300,
                     margin=dict(l=20, r=20, t=40, b=20),
-                    showlegend=False
+                    showlegend=False,
+                    yaxis=dict(gridcolor='rgba(255,255,255,0.05)')
                 )
                 st.plotly_chart(fig, use_container_width=True)
             
@@ -641,7 +668,9 @@ with tabs[3]:
                         values=[wins, losses],
                         marker_colors=['#2ECC71', '#E74C3C'],
                         textinfo='label+percent',
-                        hole=0.4
+                        textfont=dict(size=12),
+                        hole=0.4,
+                        pull=[0.02, 0]
                     )])
                     
                     fig.update_layout(
@@ -650,7 +679,12 @@ with tabs[3]:
                         plot_bgcolor='rgba(0,0,0,0)',
                         paper_bgcolor='rgba(0,0,0,0)',
                         height=300,
-                        margin=dict(l=20, r=20, t=40, b=20)
+                        margin=dict(l=20, r=20, t=40, b=20),
+                        annotations=[dict(
+                            text=f'{wins+losses} Trades',
+                            x=0.5, y=0.5,
+                            font=dict(size=12, color='white')
+                        )]
                     )
                     st.plotly_chart(fig, use_container_width=True)
             
@@ -661,16 +695,16 @@ with tabs[3]:
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 volatility = df_open['Change %'].std() if len(df_open) > 1 else 0
-                st.metric("Volatility", f"{volatility:.2f}%")
+                st.metric("📉 Volatility", f"{volatility:.2f}%")
             with col2:
                 avg_return = df_open['Change %'].mean()
-                st.metric("Avg Return", f"{avg_return:.2f}%")
+                st.metric("📈 Avg Return", f"{avg_return:.2f}%")
             with col3:
                 max_loss = df_open['P&L'].min()
-                st.metric("Max Loss", f"Rp {max_loss:,.0f}")
+                st.metric("🔻 Max Loss", format_rupiah(max_loss))
             with col4:
                 max_gain = df_open['P&L'].max()
-                st.metric("Max Gain", f"Rp {max_gain:,.0f}")
+                st.metric("🔺 Max Gain", format_rupiah(max_gain))
         else:
             st.info("Tidak ada posisi open untuk analitik")
     else:
@@ -683,7 +717,7 @@ with tabs[4]:
     st.subheader("🗑️ DELETE TRANSACTION")
     
     if not df.empty:
-        options = [f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y')} - Rp {row['Value (Buy)']:,.0f}" 
+        options = [f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y')} - {format_rupiah(row['Value (Buy)'])}" 
                   for _, row in df.iterrows()]
         to_delete = st.selectbox("Pilih transaksi untuk dihapus:", options)
         
