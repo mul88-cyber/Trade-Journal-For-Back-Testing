@@ -97,7 +97,10 @@ def load_data(_client):
         
         # Bersihkan format angka/uang (P&L, Harga, dll) agar bisa dibaca Pandas
         # Hapus 'Rp', koma, spasi, dan '%' lalu jadikan float
-        cols_to_clean = ["Price (Buy)", "Value (Buy)", "Current Price", "Custom Price", "P&L", "P&L (Custom)"]
+        cols_to_clean = [
+            "Price (Buy)", "Value (Buy)", "Current Price", "Custom Price", 
+            "P&L", "P&L (Custom)", "Change %", "Change % (Custom)"  # <-- Tambahkan dua kolom persentase
+        ]
         for col in cols_to_clean:
             if col in df.columns:
                 df[col] = df[col].astype(str).str.replace(r'[Rp,%\s]', '', regex=True)
