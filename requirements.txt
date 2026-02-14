@@ -3,5 +3,5 @@ pandas
 plotly
 numpy
 pytz
-gspread==5.12.4
+gspread>=6.0.0
 google-auth==2.29.0
