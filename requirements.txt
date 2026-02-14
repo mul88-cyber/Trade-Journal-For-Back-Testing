@@ -1,5 +1,6 @@
 streamlit
 pandas
+plotly
 numpy
 pytz
 gspread==5.12.4
