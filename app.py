@@ -1,10 +1,8 @@
 import streamlit as st
 import gspread
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 from datetime import date, datetime
-from google.oauth2.service_account import Credentials
 import numpy as np
 
 # -----------------------------------------------------------------
@@ -18,7 +16,7 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# DARK ABU-ABU TUA KORPORAT CSS
+# CSS KORPORAT & MOBILE FRIENDLY
 # -----------------------------------------------------------------
 st.markdown("""
     <style>
@@ -181,15 +179,6 @@ st.markdown("""
         background: rgba(52, 73, 94, 0.4) !important;
     }
     
-    /* Angka di tabel - separator ribuan */
-    .stDataFrame td:nth-child(4), /* Price Buy */
-    .stDataFrame td:nth-child(5), /* Value Buy */
-    .stDataFrame td:nth-child(7), /* Current Price */
-    .stDataFrame td:nth-child(9) { /* P&L */
-        font-family: 'Courier New', monospace !important;
-        font-weight: 500 !important;
-    }
-    
     /* BUTTON KORPORAT */
     .stButton>button {
         background: #3498DB;
@@ -258,23 +247,27 @@ st.markdown("""
         background: #3498DB;
         border-radius: 10px;
     }
+    
     /* ===== MOBILE RESPONSIVENESS (KHUSUS HP) ===== */
     @media (max-width: 768px) {
-        /* Sesuaikan ukuran font judul agar tidak berantakan */
         h1 { font-size: 1.8rem !important; }
         h2 { font-size: 1.4rem !important; }
         h3 { font-size: 1.1rem !important; }
         
-        /* Perkecil kotak metrik (Total Portfolio, dll) */
+        .premium-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
         div[data-testid="metric-container"] {
             padding: 12px !important;
             margin-bottom: 10px !important;
         }
         div[data-testid="metric-container"] div {
-            font-size: 1.3rem !important;
+            font-size: 1.2rem !important;
         }
         
-        /* Rapikan Tab Menu agar bisa digeser (swipe) ke samping */
         .stTabs [data-baseweb="tab-list"] {
             flex-wrap: nowrap !important;
             overflow-x: auto !important;
@@ -284,10 +277,9 @@ st.markdown("""
         .stTabs [data-baseweb="tab"] {
             white-space: nowrap !important;
             font-size: 0.85rem !important;
-            padding: 8px 0px !important;
+            padding: 8px 12px !important;
         }
         
-        /* PENTING: Buat tabel bisa di-scroll ke kanan, bukan tergencet */
         .stDataFrame {
             overflow-x: auto !important;
         }
@@ -295,66 +287,12 @@ st.markdown("""
             min-width: 800px !important; 
         }
         
-        /* Tombol lebih compact */
         .stButton>button {
             padding: 8px 16px !important;
             font-size: 0.9rem !important;
         }
     }
     </style>
-    
-    <script>
-    // COLOR SCALE UNTUK TABEL
-    function applyColorScale() {
-        const tables = document.querySelectorAll('.stDataFrame table');
-        tables.forEach(table => {
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                
-                // Kolom P&L (index 8 - karena kita pilih 9 kolom)
-                if (cells.length >= 9) {
-                    const pnlCell = cells[8];
-                    const pnlText = pnlCell?.textContent || '';
-                    const pnlValue = parseFloat(pnlText.replace(/[^0-9-]/g, ''));
-                    
-                    if (!isNaN(pnlValue)) {
-                        if (pnlValue > 0) {
-                            pnlCell.style.background = 'linear-gradient(90deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.02))';
-                            pnlCell.style.color = '#2ECC71';
-                            pnlCell.style.fontWeight = '600';
-                        } else if (pnlValue < 0) {
-                            pnlCell.style.background = 'linear-gradient(90deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.02))';
-                            pnlCell.style.color = '#E74C3C';
-                            pnlCell.style.fontWeight = '600';
-                        }
-                    }
-                }
-                
-                // Kolom Change % (index 7)
-                if (cells.length >= 8) {
-                    const changeCell = cells[7];
-                    const changeText = changeCell?.textContent || '';
-                    const changeValue = parseFloat(changeText.replace(/[^0-9.-]/g, ''));
-                    
-                    if (!isNaN(changeValue)) {
-                        if (changeValue > 0) {
-                            changeCell.style.color = '#2ECC71';
-                            changeCell.style.fontWeight = '600';
-                        } else if (changeValue < 0) {
-                            changeCell.style.color = '#E74C3C';
-                            changeCell.style.fontWeight = '600';
-                        }
-                    }
-                }
-            });
-        });
-    }
-    
-    document.addEventListener('DOMContentLoaded', applyColorScale);
-    const observer = new MutationObserver(applyColorScale);
-    observer.observe(document.body, { childList: true, subtree: true });
-    </script>
     """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------
@@ -373,11 +311,6 @@ st.markdown(f"""
 # -----------------------------------------------------------------
 # KONEKSI GOOGLE SHEETS
 # -----------------------------------------------------------------
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-
 # Sesuai dengan kolom di GSheet
 COLUMNS = [
     "Buy Date", "Stock Code", "Qty Lot", "Price (Buy)", "Value (Buy)", 
@@ -388,9 +321,9 @@ COLUMNS = [
 @st.cache_resource(ttl=300)
 def get_gsheet_client():
     try:
-        creds_dict = st.secrets["gcp_service_account"]
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-        client = gspread.authorize(creds)
+        # PERBAIKAN 1: Metode otentikasi baru untuk Streamlit Cloud agar tidak error "_auth_request"
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        client = gspread.service_account_from_dict(creds_dict)
         return client
     except Exception as e:
         st.error(f"🔴 Gagal koneksi ke Google Sheets: {str(e)}")
@@ -494,13 +427,12 @@ with tabs[0]:
         # TABEL TRANSACTIONS
         st.subheader("📋 TRANSACTION HISTORY")
         
-        # Pilih kolom untuk ditampilkan
         display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Value (Buy)', 
                         'Possition', 'Current Price', 'Change %', 'P&L']
         df_display = df[display_cols].copy()
         
-        # Format dates
-        df_display['Buy Date'] = df_display['Buy Date'].dt.strftime('%d/%m/%y')
+        # Format dates & Hindari Error NaT
+        df_display['Buy Date'] = df_display['Buy Date'].apply(lambda x: x.strftime('%d/%m/%y') if pd.notna(x) else '-')
         
         # Format numbers dengan separator ribuan
         df_display['Price (Buy)'] = df_display['Price (Buy)'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
@@ -509,7 +441,7 @@ with tabs[0]:
         df_display['P&L'] = df_display['P&L'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
         df_display['Change %'] = df_display['Change %'].apply(lambda x: f"{x:.1f}%")
         
-        # 1. Rename kolom agar judulnya rapi dan ada icon-nya
+        # Rename kolom agar rapi
         df_display = df_display.rename(columns={
             "Buy Date": "📅 DATE",
             "Stock Code": "📊 STOCK",
@@ -522,29 +454,25 @@ with tabs[0]:
             "P&L": "💲 P&L"
         })
 
-        # 2. Fungsi Logika Warna (Merah untuk Minus, Hijau untuk Plus)
+        # PERBAIKAN: Fungsi pewarnaan kolom P&L dengan Pandas Styler
         def color_profit_loss(val):
             try:
-                # Bersihkan teks (Hapus Rp, %, dan titik separator) untuk mengecek nilai aslinya
                 clean_val = str(val).replace('Rp', '').replace('%', '').replace('.', '').replace(',', '').strip()
                 num = float(clean_val)
                 if num > 0:
-                    return 'color: #2ECC71; font-weight: 700;' # Warna Hijau
+                    return 'color: #2ECC71; font-weight: 700;'
                 elif num < 0:
-                    return 'color: #E74C3C; font-weight: 700;' # Warna Merah
+                    return 'color: #E74C3C; font-weight: 700;'
                 else:
-                    return 'color: #BDC3C7;' # Warna Abu-abu jika 0
+                    return 'color: #BDC3C7;'
             except:
                 return ''
 
-        # 3. Terapkan warna ke DataFrame Pandas
-        # (Menggunakan try-except untuk kompatibilitas versi Pandas baru & lama)
         try:
             styled_df = df_display.style.map(color_profit_loss, subset=['📈 CHANGE', '💲 P&L'])
         except:
             styled_df = df_display.style.applymap(color_profit_loss, subset=['📈 CHANGE', '💲 P&L'])
 
-        # 4. Tampilkan Tabel
         st.dataframe(
             styled_df,
             use_container_width=True,
@@ -595,26 +523,25 @@ with tabs[1]:
             else:
                 try:
                     new_row = [
-                        buy_date.strftime("%Y-%m-%d"),  # Buy Date
-                        stock_code,                      # Stock Code
-                        qty_lot,                          # Qty Lot
-                        price_buy,                        # Price (Buy)
-                        "",                               # Value (Buy) - formula
-                        "",                               # Current Date - formula
-                        "",                               # Current Price - formula
-                        "",                               # Custom Date
-                        "",                               # Custom Price - formula
-                        position,                         # Possition
-                        "",                               # Change % - formula
-                        "",                               # P&L - formula
-                        "",                               # Change % (Custom) - formula
-                        ""                                # P&L (Custom) - formula
+                        buy_date.strftime("%Y-%m-%d"), stock_code, qty_lot, price_buy,
+                        "", "", "", "", "", position, "", "", "", ""
                     ]
-                    worksheet.append_row(new_row, value_input_option='USER_ENTERED')
-                    st.cache_data.clear()
-                    st.success(f"✅ {stock_code} berhasil ditambahkan!")
-                    st.balloons()
-                    st.rerun()
+                    
+                    with st.spinner("Menyimpan ke Google Sheets..."):
+                        # PERBAIKAN 2: Anti Ghost Rows (Cari baris kosong di kolom B lalu timpa)
+                        kolom_b = worksheet.col_values(2) # Ambil isi kolom B (Stock Code)
+                        baris_baru = len(kolom_b) + 1
+                        
+                        worksheet.update(
+                            range_name=f"A{baris_baru}", 
+                            values=[new_row], 
+                            value_input_option='USER_ENTERED'
+                        )
+                        
+                        st.cache_data.clear()
+                        st.success(f"✅ {stock_code} berhasil ditambahkan!")
+                        st.balloons()
+                        st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
 
@@ -625,7 +552,7 @@ with tabs[2]:
     st.subheader("✏️ UPDATE TRANSACTION")
     
     if not df.empty:
-        # Pilih transaksi
+        # PERBAIKAN 3: Anti error tanggal NaT saat load ke Selectbox
         options = [
             f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'} - {format_rupiah(row['Price (Buy)'])}" 
             for _, row in df.iterrows()
@@ -642,7 +569,6 @@ with tabs[2]:
             col1, col2 = st.columns(2)
             
             with col1:
-                # Update Position
                 new_position = st.selectbox(
                     "📍 Update Position",
                     ["Open/Floating", "Closed"],
@@ -650,7 +576,6 @@ with tabs[2]:
                 )
             
             with col2:
-                # Update Custom Date
                 custom_date = st.date_input(
                     "📅 Custom Date (Skenario)",
                     value=row['Custom Date'] if pd.notna(row['Custom Date']) else date.today()
@@ -658,14 +583,15 @@ with tabs[2]:
             
             if st.button("🔄 UPDATE", use_container_width=True):
                 try:
-                    updates = [
-                        {'range': f'J{gsheet_row}', 'values': [[new_position]]},  # Kolom Possition
-                        {'range': f'H{gsheet_row}', 'values': [[custom_date.strftime("%Y-%m-%d")]]}  # Kolom Custom Date
-                    ]
-                    worksheet.batch_update(updates, value_input_option='USER_ENTERED')
-                    st.cache_data.clear()
-                    st.success("✅ Data berhasil diupdate!")
-                    st.rerun()
+                    with st.spinner("Updating..."):
+                        updates = [
+                            {'range': f'J{gsheet_row}', 'values': [[new_position]]},  
+                            {'range': f'H{gsheet_row}', 'values': [[custom_date.strftime("%Y-%m-%d")]]}  
+                        ]
+                        worksheet.batch_update(updates, value_input_option='USER_ENTERED')
+                        st.cache_data.clear()
+                        st.success("✅ Data berhasil diupdate!")
+                        st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
     else:
@@ -678,7 +604,7 @@ with tabs[3]:
     st.subheader("📈 ANALYTICS DASHBOARD")
     
     if not df.empty:
-        df_open = df[df['Possition'].str.contains('Open', na=False)]
+        df_open = df[df['Possition'].str.contains('Open', case=False, na=False)]
         
         if not df_open.empty:
             col1, col2 = st.columns(2)
@@ -769,7 +695,7 @@ with tabs[4]:
     st.subheader("🗑️ DELETE TRANSACTION")
     
     if not df.empty:
-        # Pilih transaksi untuk dihapus (GANTI BAGIAN INI)
+        # PERBAIKAN 4: Anti error tanggal NaT saat load ke Selectbox
         options = [
             f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'} - {format_rupiah(row['Value (Buy)'])}" 
             for _, row in df.iterrows()
@@ -787,10 +713,12 @@ with tabs[4]:
             with col1:
                 if st.button("🗑️ KONFIRMASI DELETE", use_container_width=True):
                     try:
-                        worksheet.delete_rows(gsheet_row)
-                        st.cache_data.clear()
-                        st.success("✅ Transaksi dihapus!")
-                        st.rerun()
+                        with st.spinner("Deleting..."):
+                            # PERBAIKAN 5: Menggunakan delete_row() BUKAN delete_rows()
+                            worksheet.delete_row(gsheet_row)
+                            st.cache_data.clear()
+                            st.success("✅ Transaksi dihapus!")
+                            st.rerun()
                     except Exception as e:
                         st.error(f"❌ Error: {str(e)}")
             with col2:
