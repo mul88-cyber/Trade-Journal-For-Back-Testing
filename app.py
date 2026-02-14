@@ -7,7 +7,7 @@ import numpy as np
 from google.oauth2.service_account import Credentials
 
 # =========================================================================
-# MULTI-THEME SELECTOR (ORISINAL)
+# MULTI-THEME SELECTOR 
 # =========================================================================
 
 # Inisialisasi theme di session state
@@ -123,7 +123,7 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# CSS DINAMIS (ORISINAL)
+# CSS DINAMIS 
 # -----------------------------------------------------------------
 st.markdown(f"""
     <style>
@@ -336,7 +336,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================================
-# FIXED: KONEKSI GOOGLE SHEETS (DIPERBAIKI)
+# KONEKSI GOOGLE SHEETS DENGAN ID SPESIFIK 
 # =========================================================================
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -349,6 +349,9 @@ COLUMNS = [
     "Possition", "Change %", "P&L", "Change % (Custom)", "P&L (Custom)"
 ]
 
+# ID Spreadsheet Spesifik Milik Bapak
+SPREADSHEET_ID = "1l808C4D-jUCxZTjLsbs4QrjLrwzLeTVtQ5cT1hzrzuk"
+
 @st.cache_resource(ttl=300)
 def get_gsheet_client():
     try:
@@ -356,7 +359,7 @@ def get_gsheet_client():
             st.error("❌ Gagal: secrets 'gcp_service_account' tidak ditemukan!")
             return None
         
-        # PERBAIKAN 1: Jadikan dict murni untuk mencegah error _auth_request
+        # Dictionary murni agar tidak kena auth error
         creds_dict = dict(st.secrets["gcp_service_account"])
         creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         client = gspread.authorize(creds)
@@ -365,13 +368,13 @@ def get_gsheet_client():
         st.error(f"🔴 Gagal koneksi ke Google Sheets: {str(e)}")
         return None
 
-# PERBAIKAN 2: Pisahkan pengembalian worksheet agar tidak kena error "Cannot serialize"
 def get_worksheet(_client):
     if _client:
         try:
-            return _client.open("Trade Journal").worksheet("IDX")
+            # Gunakan ID untuk memastikan langsung menembak ke file yang benar
+            return _client.open_by_key(SPREADSHEET_ID).worksheet("IDX")
         except Exception as e:
-            st.error(f"🔴 Gagal mengambil Worksheet: {str(e)}")
+            st.error(f"🔴 Gagal mengambil Worksheet. Pastikan Service Account sudah jadi Editor! Error: {str(e)}")
     return None
 
 @st.cache_data(ttl=30)
@@ -380,7 +383,8 @@ def load_data(_client):
         if _client is None:
             return pd.DataFrame(columns=COLUMNS)
             
-        spreadsheet = _client.open("Trade Journal")
+        # Gunakan ID untuk memastikan langsung menembak ke file yang benar
+        spreadsheet = _client.open_by_key(SPREADSHEET_ID)
         ws = spreadsheet.worksheet("IDX")
         
         data = ws.get_all_values()
@@ -414,7 +418,6 @@ def load_data(_client):
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce')
         
-        # HANYA mengembalikan DataFrame
         return df
     except Exception as e:
         st.error(f"🔴 Gagal memuat data: {str(e)}")
@@ -424,7 +427,7 @@ def load_data(_client):
 try:
     client = get_gsheet_client()
     df = load_data(client)
-    worksheet = get_worksheet(client) # Diambil tanpa cache!
+    worksheet = get_worksheet(client) 
 except Exception as e:
     st.error(f"❌ Fatal Error: {str(e)}")
     st.stop()
@@ -554,11 +557,11 @@ with tabs[1]:
                     with st.spinner("Menyimpan ke Google Sheets..."):
                         worksheet.append_row(new_row, value_input_option='USER_ENTERED')
                         st.cache_data.clear()
-                        st.success(f"✅ {stock_code} berhasil ditambahkan!")
+                        st.success(f"✅ {stock_code} berhasil ditambahkan ke GSheets!")
                         st.balloons()
                         st.rerun()
                 except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
+                    st.error(f"❌ Error saat menyimpan: {str(e)}")
 
 # ==========================================
 # UPDATE
@@ -597,7 +600,7 @@ with tabs[2]:
                 
                 if st.button("🔄 UPDATE", use_container_width=True):
                     try:
-                        with st.spinner("Updating..."):
+                        with st.spinner("Updating Google Sheets..."):
                             worksheet.update(
                                 f'J{gsheet_row}', 
                                 [[new_position]], 
@@ -610,10 +613,10 @@ with tabs[2]:
                             )
                             
                             st.cache_data.clear()
-                            st.success("✅ Data berhasil diupdate!")
+                            st.success("✅ Data berhasil diupdate di GSheets!")
                             st.rerun()
                     except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
+                        st.error(f"❌ Error update: {str(e)}")
         else:
             st.info("Tidak ada transaksi untuk diupdate")
     else:
@@ -728,13 +731,13 @@ with tabs[4]:
                 with col1:
                     if st.button("🗑️ KONFIRMASI DELETE", use_container_width=True):
                         try:
-                            with st.spinner("Menghapus..."):
+                            with st.spinner("Menghapus dari Google Sheets..."):
                                 worksheet.delete_rows(gsheet_row)
                                 st.cache_data.clear()
-                                st.success("✅ Transaksi dihapus!")
+                                st.success("✅ Transaksi dihapus secara permanen!")
                                 st.rerun()
                         except Exception as e:
-                            st.error(f"❌ Error: {str(e)}")
+                            st.error(f"❌ Error delete: {str(e)}")
                 with col2:
                     if st.button("BATAL", use_container_width=True):
                         st.rerun()
