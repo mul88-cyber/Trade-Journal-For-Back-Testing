@@ -4,6 +4,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from datetime import date, datetime
 import numpy as np
+from google.oauth2.service_account import Credentials
+import json
 
 # =========================================================================
 # MULTI-THEME SELECTOR (FIXED)
@@ -11,7 +13,7 @@ import numpy as np
 
 # Inisialisasi theme di session state
 if 'theme' not in st.session_state:
-    st.session_state.theme = '🌙 Dark Korporat'  # Gunakan key lengkap dengan emoji
+    st.session_state.theme = '🌙 Dark Korporat'
 
 # Fungsi ganti theme
 def change_theme(theme_name):
@@ -75,14 +77,12 @@ with st.sidebar:
         }
     }
     
-    # FIX: Gunakan list(theme_options.keys()) untuk mendapatkan semua key
     theme_keys = list(theme_options.keys())
     
-    # Cari index theme yang aktif
     if st.session_state.theme in theme_keys:
         default_index = theme_keys.index(st.session_state.theme)
     else:
-        default_index = 0  # Default ke index 0 jika tidak ditemukan
+        default_index = 0
     
     selected = st.selectbox(
         "Pilih Theme",
@@ -94,7 +94,6 @@ with st.sidebar:
     if selected != st.session_state.theme:
         change_theme(selected)
     
-    # Tampilkan warna yang aktif
     current = theme_options[st.session_state.theme]
     st.markdown(f"""
     <div style="
@@ -125,16 +124,14 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# CSS DINAMIS - BERUBAH SESUAI THEME
+# CSS DINAMIS
 # -----------------------------------------------------------------
 st.markdown(f"""
     <style>
-    /* MAIN BACKGROUND */
     .stApp {{
         background: {theme['bg']};
     }}
     
-    /* KONTENER UTAMA */
     .block-container {{
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
@@ -142,11 +139,9 @@ st.markdown(f"""
         margin: 0 auto !important;
     }}
     
-    /* HEADER */
     .premium-header {{
         background: {theme['header_bg']};
         backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 30px;
         padding: 0.8rem 2rem;
@@ -161,7 +156,6 @@ st.markdown(f"""
         font-size: 1.8rem;
         font-weight: 700;
         color: {theme['text']};
-        letter-spacing: -0.02em;
     }}
     
     .header-title span {{
@@ -175,10 +169,8 @@ st.markdown(f"""
         background: rgba(255,255,255,0.03);
         padding: 0.5rem 1rem;
         border-radius: 20px;
-        border: 1px solid rgba(255,255,255,0.05);
     }}
     
-    /* TABS */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 4px;
         background: {theme['card_bg']};
@@ -200,13 +192,6 @@ st.markdown(f"""
         font-size: 0.9rem !important;
         transition: all 0.3s ease;
         white-space: nowrap;
-        border: 1px solid transparent;
-    }}
-    
-    .stTabs [data-baseweb="tab"]:hover {{
-        color: {theme['text']};
-        background: rgba(255,255,255,0.02);
-        border-color: rgba(255,255,255,0.05);
     }}
     
     .stTabs [aria-selected="true"] {{
@@ -215,27 +200,22 @@ st.markdown(f"""
         box-shadow: 0 4px 10px {theme['accent']}80;
     }}
     
-    /* METRIC CARDS */
     div[data-testid="metric-container"] {{
         background: {theme['card_bg']} !important;
         border: 1px solid rgba(255,255,255,0.05) !important;
         border-radius: 16px !important;
         padding: 1rem !important;
         backdrop-filter: blur(8px);
-        transition: all 0.3s ease;
     }}
     
     div[data-testid="metric-container"]:hover {{
         border-color: {theme['accent']} !important;
-        background: {theme['card_bg']} !important;
     }}
     
     div[data-testid="metric-container"] label {{
         color: {theme['text_secondary']} !important;
         font-size: 0.75rem !important;
-        font-weight: 500 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
     }}
     
     div[data-testid="metric-container"] div {{
@@ -244,7 +224,6 @@ st.markdown(f"""
         font-weight: 600 !important;
     }}
     
-    /* DATAFRAME */
     .stDataFrame {{
         background: rgba(0,0,0,0.1);
         backdrop-filter: blur(8px);
@@ -253,42 +232,22 @@ st.markdown(f"""
         overflow: hidden;
     }}
     
-    .stDataFrame [data-testid="stDataFrame"] {{
-        background: transparent !important;
-    }}
-    
-    .stDataFrame table {{
-        border-collapse: separate;
-        border-spacing: 0;
-        width: 100%;
-        background: transparent !important;
-    }}
-    
     .stDataFrame th {{
         background: {theme['card_bg']} !important;
         color: {theme['text']} !important;
-        font-weight: 600 !important;
-        font-size: 0.8rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 0.8rem 1rem !important;
         border-bottom: 2px solid {theme['accent']} !important;
     }}
     
     .stDataFrame td {{
         background: rgba(0,0,0,0.1) !important;
         color: {theme['text_secondary']} !important;
-        padding: 0.6rem 1rem !important;
         border-bottom: 1px solid rgba(255,255,255,0.02) !important;
-        font-size: 0.9rem !important;
-        transition: all 0.2s ease;
     }}
     
     .stDataFrame tr:hover td {{
         background: {theme['card_bg']} !important;
     }}
     
-    /* BUTTON */
     .stButton>button {{
         background: {theme['accent']};
         color: white;
@@ -296,7 +255,6 @@ st.markdown(f"""
         border-radius: 30px !important;
         padding: 0.4rem 1.5rem !important;
         font-weight: 500;
-        font-size: 0.85rem !important;
         transition: all 0.3s ease;
     }}
     
@@ -306,12 +264,10 @@ st.markdown(f"""
         box-shadow: 0 4px 10px {theme['accent']}80;
     }}
     
-    /* INPUT FIELDS */
     div[data-baseweb="input"], div[data-baseweb="select"] {{
         background: {theme['card_bg']} !important;
         border: 1px solid rgba(255,255,255,0.05) !important;
         border-radius: 30px !important;
-        transition: all 0.3s ease;
     }}
     
     div[data-baseweb="input"]:hover, div[data-baseweb="select"]:hover {{
@@ -320,18 +276,12 @@ st.markdown(f"""
     
     input, select {{
         color: {theme['text']} !important;
-        font-size: 0.9rem !important;
-        padding: 0.6rem 1rem !important;
     }}
     
     .stTextInput label, .stSelectbox label, .stDateInput label {{
         color: {theme['text_secondary']} !important;
-        font-size: 0.8rem !important;
-        font-weight: 500 !important;
-        margin-bottom: 0.2rem !important;
     }}
     
-    /* DIVIDER */
     hr {{
         background: linear-gradient(90deg, transparent, {theme['accent']}, transparent) !important;
         height: 1px !important;
@@ -340,7 +290,6 @@ st.markdown(f"""
         opacity: 0.3;
     }}
     
-    /* SCROLLBAR */
     ::-webkit-scrollbar {{
         width: 6px;
         height: 6px;
@@ -356,119 +305,22 @@ st.markdown(f"""
         border-radius: 10px;
     }}
     
-    /* POSITIVE/NEGATIVE COLORS */
-    .positive {{
-        color: {theme['positive']} !important;
-        font-weight: 600;
-    }}
-    
-    .negative {{
-        color: {theme['negative']} !important;
-        font-weight: 600;
-    }}
-    
-    /* MOBILE RESPONSIVENESS */
     @media (max-width: 768px) {{
-        h1 {{ font-size: 1.8rem !important; }}
-        h2 {{ font-size: 1.4rem !important; }}
-        h3 {{ font-size: 1.1rem !important; }}
-        
         .premium-header {{
             flex-direction: column;
             align-items: flex-start;
             gap: 0.5rem;
         }}
         
-        div[data-testid="metric-container"] {{
-            padding: 12px !important;
-            margin-bottom: 10px !important;
-        }}
         div[data-testid="metric-container"] div {{
             font-size: 1.2rem !important;
         }}
         
-        .stTabs [data-baseweb="tab-list"] {{
-            flex-wrap: nowrap !important;
-            overflow-x: auto !important;
-            gap: 15px !important;
-            padding-bottom: 5px !important;
-        }}
-        .stTabs [data-baseweb="tab"] {{
-            white-space: nowrap !important;
-            font-size: 0.85rem !important;
-            padding: 8px 12px !important;
-        }}
-        
-        .stDataFrame {{
-            overflow-x: auto !important;
-        }}
         .stDataFrame table {{
             min-width: 800px !important; 
         }}
-        
-        .stButton>button {{
-            padding: 8px 16px !important;
-            font-size: 0.9rem !important;
-        }}
     }}
     </style>
-    
-    <script>
-    // COLOR SCALE UNTUK TABEL
-    function applyColorScale() {{
-        const tables = document.querySelectorAll('.stDataFrame table');
-        tables.forEach(table => {{
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {{
-                const cells = row.querySelectorAll('td');
-                
-                // P&L column (index 8)
-                if (cells.length >= 9) {{
-                    const pnlCell = cells[8];
-                    if (pnlCell && pnlCell.textContent) {{
-                        const pnlText = pnlCell.textContent;
-                        const pnlValue = parseFloat(pnlText.replace(/[^0-9-]/g, ''));
-                        
-                        if (!isNaN(pnlValue)) {{
-                            if (pnlValue > 0) {{
-                                pnlCell.style.background = 'linear-gradient(90deg, {theme['positive']}20, transparent)';
-                                pnlCell.style.color = '{theme['positive']}';
-                                pnlCell.style.fontWeight = '600';
-                            }} else if (pnlValue < 0) {{
-                                pnlCell.style.background = 'linear-gradient(90deg, {theme['negative']}20, transparent)';
-                                pnlCell.style.color = '{theme['negative']}';
-                                pnlCell.style.fontWeight = '600';
-                            }}
-                        }}
-                    }}
-                }}
-                
-                // Change % column (index 7)
-                if (cells.length >= 8) {{
-                    const changeCell = cells[7];
-                    if (changeCell && changeCell.textContent) {{
-                        const changeText = changeCell.textContent;
-                        const changeValue = parseFloat(changeText.replace(/[^0-9.-]/g, ''));
-                        
-                        if (!isNaN(changeValue)) {{
-                            if (changeValue > 0) {{
-                                changeCell.style.color = '{theme['positive']}';
-                                changeCell.style.fontWeight = '600';
-                            }} else if (changeValue < 0) {{
-                                changeCell.style.color = '{theme['negative']}';
-                                changeCell.style.fontWeight = '600';
-                            }}
-                        }}
-                    }}
-                }}
-            }});
-        }});
-    }}
-    
-    document.addEventListener('DOMContentLoaded', applyColorScale);
-    const observer = new MutationObserver(applyColorScale);
-    observer.observe(document.body, {{ childList: true, subtree: true }});
-    </script>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------
@@ -484,10 +336,14 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# -----------------------------------------------------------------
-# KONEKSI GOOGLE SHEETS (FIXED)
-# -----------------------------------------------------------------
-# Sesuai dengan kolom di GSheet
+# =========================================================================
+# FIXED: KONEKSI GOOGLE SHEETS DENGAN METODE ALTERNATIF
+# =========================================================================
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
 COLUMNS = [
     "Buy Date", "Stock Code", "Qty Lot", "Price (Buy)", "Value (Buy)", 
     "Current Date", "Current Price", "Custom Date", "Custom Price", 
@@ -496,17 +352,26 @@ COLUMNS = [
 
 @st.cache_resource(ttl=300)
 def get_gsheet_client():
+    """FIXED: Menggunakan metode otentikasi yang lebih stabil"""
     try:
-        # PERBAIKAN: Metode otentikasi yang benar
-        if "gcp_service_account" in st.secrets:
-            creds_dict = dict(st.secrets["gcp_service_account"])
-            client = gspread.service_account_from_dict(creds_dict)
-            return client
-        else:
+        # Cek apakah secrets tersedia
+        if "gcp_service_account" not in st.secrets:
             st.error("❌ Gagal: secrets 'gcp_service_account' tidak ditemukan!")
+            st.info("Pastikan file .streamlit/secrets.toml sudah berisi credentials Google Sheets")
             return None
+        
+        # Ambil credentials dari secrets
+        creds_dict = st.secrets["gcp_service_account"]
+        
+        # FIX: Gunakan metode otentikasi dengan service_account dari dict
+        # Bukan service_account_from_dict yang bermasalah
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        client = gspread.authorize(creds)
+        
+        return client
     except Exception as e:
         st.error(f"🔴 Gagal koneksi ke Google Sheets: {str(e)}")
+        st.info("Tips: Pastikan file service account JSON sudah benar dan spreadsheet sudah di-share ke email service account")
         return None
 
 @st.cache_data(ttl=30)
@@ -559,11 +424,15 @@ def load_data(_client):
         st.error(f"🔴 Gagal memuat data: {str(e)}")
         return None, pd.DataFrame()
 
-# Initialize
-client = get_gsheet_client()
-if client:
-    worksheet, df = load_data(client)
-else:
+# Initialize dengan try-except
+try:
+    client = get_gsheet_client()
+    if client:
+        worksheet, df = load_data(client)
+    else:
+        st.stop()
+except Exception as e:
+    st.error(f"❌ Fatal Error: {str(e)}")
     st.stop()
 
 # Format function untuk separator ribuan
@@ -585,10 +454,8 @@ tabs = st.tabs(["📊 DASHBOARD", "➕ ENTRY", "✏️ UPDATE", "📈 ANALYTICS"
 # ==========================================
 with tabs[0]:
     if not df.empty:
-        # Filter open positions
         df_open = df[df['Possition'].str.contains('Open|Floating', case=False, na=False)]
         
-        # METRICS
         cols = st.columns(4)
         with cols[0]:
             total_val = df_open['Value (Buy)'].sum() if not df_open.empty else 0
@@ -607,24 +474,19 @@ with tabs[0]:
         
         st.divider()
         
-        # TABEL TRANSACTIONS
         st.subheader("📋 TRANSACTION HISTORY")
         
         display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Value (Buy)', 
                         'Possition', 'Current Price', 'Change %', 'P&L']
         df_display = df[display_cols].copy()
         
-        # Format dates
         df_display['Buy Date'] = df_display['Buy Date'].apply(lambda x: x.strftime('%d/%m/%y') if pd.notna(x) else '-')
-        
-        # Format numbers dengan separator ribuan
         df_display['Price (Buy)'] = df_display['Price (Buy)'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
         df_display['Value (Buy)'] = df_display['Value (Buy)'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
         df_display['Current Price'] = df_display['Current Price'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
         df_display['P&L'] = df_display['P&L'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
         df_display['Change %'] = df_display['Change %'].apply(lambda x: f"{x:.1f}%")
         
-        # Rename kolom
         df_display = df_display.rename(columns={
             "Buy Date": "📅 DATE",
             "Stock Code": "📊 STOCK",
@@ -644,7 +506,6 @@ with tabs[0]:
             height=400
         )
         
-        # SUMMARY
         col1, col2, col3 = st.columns(3)
         with col1:
             total_pnl = df['P&L'].sum()
@@ -660,7 +521,7 @@ with tabs[0]:
         st.info("✨ Belum ada transaksi. Mulai dengan tab ENTRY")
 
 # ==========================================
-# ENTRY - CREATE (FIXED)
+# ENTRY - CREATE
 # ==========================================
 with tabs[1]:
     st.subheader("➕ ADD NEW TRANSACTION")
@@ -687,43 +548,33 @@ with tabs[1]:
             else:
                 try:
                     new_row = [
-                        buy_date.strftime("%Y-%m-%d"),  # Buy Date
-                        stock_code,                      # Stock Code
-                        qty_lot,                          # Qty Lot
-                        price_buy,                        # Price (Buy)
-                        "",                               # Value (Buy) - formula
-                        "",                               # Current Date - formula
-                        "",                               # Current Price - formula
-                        "",                               # Custom Date
-                        "",                               # Custom Price - formula
-                        position,                         # Possition
-                        "",                               # Change % - formula
-                        "",                               # P&L - formula
-                        "",                               # Change % (Custom) - formula
-                        ""                                # P&L (Custom) - formula
+                        buy_date.strftime("%Y-%m-%d"),
+                        stock_code,
+                        qty_lot,
+                        price_buy,
+                        "", "", "", "", "",
+                        position,
+                        "", "", "", ""
                     ]
                     
                     with st.spinner("Menyimpan ke Google Sheets..."):
-                        # PERBAIKAN: Menggunakan append_row yang benar
+                        # FIXED: append_row dengan format yang benar
                         worksheet.append_row(new_row, value_input_option='USER_ENTERED')
                         
-                        # Clear cache dan refresh
                         st.cache_data.clear()
                         st.success(f"✅ {stock_code} berhasil ditambahkan!")
                         st.balloons()
                         st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
-                    st.error("Detail: Pastikan koneksi ke Google Sheets berhasil")
 
 # ==========================================
-# UPDATE - Edit (FIXED)
+# UPDATE
 # ==========================================
 with tabs[2]:
     st.subheader("✏️ UPDATE TRANSACTION")
     
     if not df.empty:
-        # Pilih transaksi
         options = [
             f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'} - {format_rupiah(row['Price (Buy)'])}" 
             for _, row in df.iterrows()
@@ -735,7 +586,7 @@ with tabs[2]:
             if selected:
                 idx = options.index(selected)
                 row = df.iloc[idx]
-                gsheet_row = idx + 2  # +2 karena header di baris 1
+                gsheet_row = idx + 2
                 
                 st.info(f"**Mengedit:** {row['Stock Code']} - Beli: {format_rupiah(row['Price (Buy)'])}")
                 
@@ -749,14 +600,13 @@ with tabs[2]:
                     )
                 
                 with col2:
-                    # Gunakan today jika Custom Date kosong
                     default_date = row['Custom Date'] if pd.notna(row['Custom Date']) else date.today()
                     custom_date = st.date_input("📅 Custom Date (Skenario)", default_date)
                 
                 if st.button("🔄 UPDATE", use_container_width=True):
                     try:
                         with st.spinner("Updating..."):
-                            # PERBAIKAN: Update langsung dengan update
+                            # FIXED: Menggunakan update dengan range yang tepat
                             worksheet.update(
                                 f'J{gsheet_row}', 
                                 [[new_position]], 
@@ -791,7 +641,6 @@ with tabs[3]:
             col1, col2 = st.columns(2)
             
             with col1:
-                # Bar Chart P&L
                 fig = go.Figure()
                 colors = [theme['positive'] if x > 0 else theme['negative'] for x in df_open['P&L']]
                 
@@ -812,13 +661,11 @@ with tabs[3]:
                     font=dict(color=theme['text']),
                     height=300,
                     margin=dict(l=20, r=20, t=40, b=20),
-                    showlegend=False,
-                    yaxis=dict(gridcolor='rgba(255,255,255,0.05)')
+                    showlegend=False
                 )
                 st.plotly_chart(fig, use_container_width=True)
             
             with col2:
-                # Pie Chart Win/Loss
                 wins = (df_open['P&L'] > 0).sum()
                 losses = (df_open['P&L'] < 0).sum()
                 
@@ -829,8 +676,7 @@ with tabs[3]:
                         marker_colors=[theme['positive'], theme['negative']],
                         textinfo='label+percent',
                         textfont=dict(size=12, color=theme['text']),
-                        hole=0.4,
-                        pull=[0.02, 0]
+                        hole=0.4
                     )])
                     
                     fig.update_layout(
@@ -840,16 +686,10 @@ with tabs[3]:
                         paper_bgcolor='rgba(0,0,0,0)',
                         font=dict(color=theme['text']),
                         height=300,
-                        margin=dict(l=20, r=20, t=40, b=20),
-                        annotations=[dict(
-                            text=f'{wins+losses} Trades',
-                            x=0.5, y=0.5,
-                            font=dict(size=12, color=theme['text'])
-                        )]
+                        margin=dict(l=20, r=20, t=40, b=20)
                     )
                     st.plotly_chart(fig, use_container_width=True)
             
-            # Risk Metrics
             st.divider()
             st.subheader("📊 RISK METRICS")
             
@@ -872,13 +712,12 @@ with tabs[3]:
         st.info("Tambah transaksi untuk melihat analitik")
 
 # ==========================================
-# DELETE (FIXED)
+# DELETE
 # ==========================================
 with tabs[4]:
     st.subheader("🗑️ DELETE TRANSACTION")
     
     if not df.empty:
-        # Pilih transaksi untuk dihapus
         options = [
             f"{row['Stock Code']} - {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'} - {format_rupiah(row['Value (Buy)'])}" 
             for _, row in df.iterrows()
@@ -890,18 +729,16 @@ with tabs[4]:
             if to_delete:
                 idx = options.index(to_delete)
                 row = df.iloc[idx]
-                gsheet_row = idx + 2  # +2 karena header di baris 1
+                gsheet_row = idx + 2
                 
                 st.warning(f"⚠️ PERMANENT DELETE: **{row['Stock Code']}**")
-                st.write(f"Tanggal: {row['Buy Date'].strftime('%d/%m/%y') if pd.notna(row['Buy Date']) else '-'}")
-                st.write(f"Nilai: {format_rupiah(row['Value (Buy)'])}")
                 
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("🗑️ KONFIRMASI DELETE", use_container_width=True):
                         try:
                             with st.spinner("Menghapus..."):
-                                # PERBAIKAN: Menggunakan delete_rows dengan parameter yang benar
+                                # FIXED: delete_rows dengan parameter yang benar
                                 worksheet.delete_rows(gsheet_row)
                                 
                                 st.cache_data.clear()
