@@ -352,13 +352,24 @@ COLUMNS = [
 
 @st.cache_resource(ttl=300)
 def get_gsheet_client():
-    """FIXED: Menggunakan metode otentikasi yang lebih stabil"""
     try:
-        # Cek apakah secrets tersedia
         if "gcp_service_account" not in st.secrets:
             st.error("❌ Gagal: secrets 'gcp_service_account' tidak ditemukan!")
-            st.info("Pastikan file .streamlit/secrets.toml sudah berisi credentials Google Sheets")
             return None
+        
+        # Ambil credentials
+        creds_dict = dict(st.secrets["gcp_service_account"]) # Pastikan diconvert ke dict murni
+        
+        # Gunakan metode from_service_account_info
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        
+        # Inisialisasi gspread
+        client = gspread.authorize(creds)
+        
+        return client
+    except Exception as e:
+        st.error(f"🔴 Gagal koneksi: {str(e)}")
+        return None
         
         # Ambil credentials dari secrets
         creds_dict = st.secrets["gcp_service_account"]
