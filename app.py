@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 import plotly.express as px
+import time
 
 # Page config
 st.set_page_config(
@@ -28,7 +29,7 @@ st.markdown("""
     /* Main container */
     .main {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
+        padding: 1rem;
     }
     
     /* Cards */
@@ -38,33 +39,36 @@ st.markdown("""
     
     div[data-testid="stVerticalBlock"] > div:has(div.element-container) {
         background: rgba(255, 255, 255, 0.95);
-        padding: 2rem;
-        border-radius: 20px;
+        padding: 1rem;
+        border-radius: 15px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         backdrop-filter: blur(10px);
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
     }
     
     /* Headers */
     h1 {
         color: #1a1a2e;
         font-weight: 700;
-        font-size: 2.5rem !important;
-        margin-bottom: 0.5rem;
+        font-size: 2rem !important;
+        margin-bottom: 0.3rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
     
     h2 {
         color: #16213e;
         font-weight: 600;
-        font-size: 1.8rem !important;
-        margin-top: 1rem;
+        font-size: 1.5rem !important;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
     }
     
     h3 {
         color: #0f3460;
         font-weight: 600;
-        font-size: 1.4rem !important;
+        font-size: 1.2rem !important;
+        margin-top: 0.3rem;
+        margin-bottom: 0.3rem;
     }
     
     /* Metrics */
@@ -140,6 +144,19 @@ st.markdown("""
         border-radius: 15px;
         overflow: hidden;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Colored table cells */
+    .positive-value {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        font-weight: 600;
+    }
+    
+    .negative-value {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+        font-weight: 600;
     }
     
     /* Success/Error messages */
@@ -400,9 +417,16 @@ def format_percentage(value):
 
 # Main App
 def main():
-    # Header
-    st.markdown("# 📈 IDX Trading Journal")
-    st.markdown("### Backtesting & Portfolio Management System")
+    # Header with refresh button
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("# 📈 IDX Trading Journal")
+    with col2:
+        if st.button("🔄 Refresh", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+    
+    st.markdown("### Backtesting & Portfolio Management")
     
     # Initialize connection
     client = init_connection()
@@ -437,27 +461,28 @@ def main():
     
     # Dashboard Tab
     with tab1:
-        st.markdown("## Portfolio Overview")
+        st.markdown("## 📊 Portfolio Overview")
         
         if df.empty:
             st.info("📝 No trades found. Start by adding your first trade!")
             return
         
-        # Key Metrics
+        # Key Metrics - more compact
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             total_value_buy = df['Value (Buy)'].sum()
-            st.metric("💰 Total Investment", format_currency(total_value_buy))
+            st.metric("💰 Investment", format_currency(total_value_buy))
         
         with col2:
             total_pnl = df['P&L'].sum()
+            delta_color = "normal" if total_pnl >= 0 else "inverse"
             st.metric("📈 Total P&L", format_currency(total_pnl), 
                      delta=format_percentage(df['Change %'].mean()))
         
         with col3:
             open_trades = len(df[df['Possition'] == 'OPEN'])
-            st.metric("🔓 Open Positions", open_trades)
+            st.metric("🔓 Open", open_trades)
         
         with col4:
             win_rate = len(df[df['P&L'] > 0]) / len(df) * 100 if len(df) > 0 else 0
@@ -465,24 +490,27 @@ def main():
         
         st.markdown("---")
         
-        # Charts
+        # Charts - smaller and side by side
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("### 📊 P&L Distribution")
+            st.markdown("### 📊 Top 10 P&L")
+            # Limit to top 10
+            chart_df = df.nlargest(10, 'P&L') if len(df) > 10 else df
             fig_pnl = px.bar(
-                df.head(10),
+                chart_df,
                 x='Stock Code',
                 y='P&L',
                 color='P&L',
                 color_continuous_scale=['#ff4b4b', '#ffffff', '#00cc66'],
-                title="Top 10 Stocks by P&L"
             )
             fig_pnl.update_layout(
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#1a1a2e'),
-                showlegend=False
+                font=dict(color='#1a1a2e', size=10),
+                showlegend=False,
+                height=300,
+                margin=dict(l=10, r=10, t=10, b=10)
             )
             st.plotly_chart(fig_pnl, use_container_width=True)
         
@@ -497,11 +525,13 @@ def main():
             fig_pie.update_layout(
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#1a1a2e')
+                font=dict(color='#1a1a2e', size=10),
+                height=300,
+                margin=dict(l=10, r=10, t=10, b=10)
             )
             st.plotly_chart(fig_pie, use_container_width=True)
         
-        # Recent Trades
+        # Recent Trades with color coding
         st.markdown("### 📋 Recent Trades")
         recent_df = df.head(10).copy()
         
@@ -511,17 +541,51 @@ def main():
             'Current Price', 'Change %', 'P&L', 'Possition'
         ]].copy()
         
-        # Format numeric columns for display
-        display_df['Price (Buy)'] = display_df['Price (Buy)'].apply(lambda x: f"Rp {x:,.0f}" if pd.notna(x) else "-")
-        display_df['Current Price'] = display_df['Current Price'].apply(lambda x: f"Rp {x:,.0f}" if pd.notna(x) else "-")
+        # Format columns
+        display_df['Buy Date'] = display_df['Buy Date'].dt.strftime('%Y-%m-%d')
+        display_df['Price (Buy)'] = display_df['Price (Buy)'].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
+        display_df['Current Price'] = display_df['Current Price'].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
         display_df['Change %'] = display_df['Change %'].apply(format_percentage)
         display_df['P&L'] = display_df['P&L'].apply(format_currency)
         
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        # Apply color styling using pandas Styler
+        def color_pnl(val):
+            """Color code P&L values"""
+            if 'Rp' in str(val):
+                # Extract number from formatted string
+                num_str = str(val).replace('Rp', '').replace(',', '').replace(' ', '')
+                try:
+                    num = float(num_str)
+                    if num > 0:
+                        return 'background-color: #d4edda; color: #155724; font-weight: 600'
+                    elif num < 0:
+                        return 'background-color: #f8d7da; color: #721c24; font-weight: 600'
+                except:
+                    pass
+            return ''
+        
+        def color_change(val):
+            """Color code Change % values"""
+            if '%' in str(val):
+                num_str = str(val).replace('%', '').replace(',', '')
+                try:
+                    num = float(num_str)
+                    if num > 0:
+                        return 'background-color: #d4edda; color: #155724; font-weight: 600'
+                    elif num < 0:
+                        return 'background-color: #f8d7da; color: #721c24; font-weight: 600'
+                except:
+                    pass
+            return ''
+        
+        # Apply styling
+        styled_df = display_df.style.applymap(color_pnl, subset=['P&L']).applymap(color_change, subset=['Change %'])
+        
+        st.dataframe(styled_df, use_container_width=True, hide_index=True, height=400)
     
     # Add Trade Tab
     with tab2:
-        st.markdown("## Add New Trade")
+        st.markdown("## ➕ Add New Trade")
         
         with st.form("add_trade_form", clear_on_submit=True):
             col1, col2 = st.columns(2)
@@ -533,18 +597,18 @@ def main():
                     max_value=datetime.now()
                 )
                 
-                stock_code = st.text_input(
-                    "🏢 Stock Code",
-                    placeholder="e.g., BBCA, BMRI, TLKM"
-                ).upper()
-            
-            with col2:
                 qty_lot = st.number_input(
                     "📦 Quantity (Lot)",
                     min_value=1,
                     value=1,
                     step=1
                 )
+            
+            with col2:
+                stock_code = st.text_input(
+                    "🏢 Stock Code",
+                    placeholder="e.g., BBCA, BMRI, TLKM"
+                ).upper()
                 
                 price_buy = st.number_input(
                     "💵 Buy Price (per share)",
@@ -554,14 +618,18 @@ def main():
                     format="%.0f"
                 )
             
-            submitted = st.form_submit_button("✅ Add Trade", use_container_width=True)
+            col1, col2, col3 = st.columns([2, 1, 1])
+            with col2:
+                submitted = st.form_submit_button("✅ Add Trade", use_container_width=True, type="primary")
             
             if submitted:
                 if stock_code and price_buy > 0:
-                    if add_trade(client, buy_date, stock_code, qty_lot, price_buy):
-                        st.success(f"✅ Trade {stock_code} successfully added!")
-                        st.balloons()
-                        st.rerun()
+                    with st.spinner('Adding trade...'):
+                        if add_trade(client, buy_date, stock_code, qty_lot, price_buy):
+                            st.success(f"✅ Trade {stock_code} successfully added!")
+                            st.balloons()
+                            time.sleep(1)
+                            st.rerun()
                 else:
                     st.error("❌ Please fill all required fields!")
     
@@ -697,25 +765,25 @@ def main():
     
     # All Trades Tab
     with tab5:
-        st.markdown("## All Trades")
+        st.markdown("## 📋 All Trades")
         
         if df.empty:
             st.info("📝 No trades found.")
             return
         
-        # Filters
-        col1, col2, col3 = st.columns(3)
+        # Filters - more compact
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             position_filter = st.multiselect(
-                "Filter by Position",
+                "Position",
                 options=['OPEN', 'CLOSE'],
                 default=['OPEN', 'CLOSE']
             )
         
         with col2:
             stock_filter = st.multiselect(
-                "Filter by Stock",
+                "Stock",
                 options=df['Stock Code'].unique().tolist()
             )
         
@@ -724,6 +792,13 @@ def main():
                 "Sort by",
                 ['Buy Date', 'P&L', 'Change %', 'Stock Code']
             )
+        
+        with col4:
+            st.write("")
+            st.write("")
+            if st.button("🔄 Refresh Data", use_container_width=True):
+                st.cache_data.clear()
+                st.rerun()
         
         # Apply filters
         filtered_df = df.copy()
@@ -737,8 +812,8 @@ def main():
         # Sort
         filtered_df = filtered_df.sort_values(by=sort_by, ascending=False)
         
-        # Display
-        st.markdown(f"### Showing {len(filtered_df)} trades")
+        # Display count
+        st.markdown(f"**Showing {len(filtered_df)} trades**")
         
         # Format for display
         display_df = filtered_df[[
@@ -747,25 +822,49 @@ def main():
             'Change % (Custom)', 'P&L (Custom)', 'Possition'
         ]].copy()
         
-        display_df['Price (Buy)'] = display_df['Price (Buy)'].apply(lambda x: f"Rp {x:,.0f}" if pd.notna(x) else "-")
-        display_df['Current Price'] = display_df['Current Price'].apply(lambda x: f"Rp {x:,.0f}" if pd.notna(x) else "-")
-        display_df['Custom Price'] = display_df['Custom Price'].apply(lambda x: f"Rp {x:,.0f}" if pd.notna(x) else "-")
+        # Format columns
+        display_df['Buy Date'] = display_df['Buy Date'].dt.strftime('%Y-%m-%d')
+        display_df['Price (Buy)'] = display_df['Price (Buy)'].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
+        display_df['Current Price'] = display_df['Current Price'].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
+        display_df['Custom Price'] = display_df['Custom Price'].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
         display_df['Change %'] = display_df['Change %'].apply(format_percentage)
         display_df['P&L'] = display_df['P&L'].apply(format_currency)
         display_df['Change % (Custom)'] = display_df['Change % (Custom)'].apply(format_percentage)
         display_df['P&L (Custom)'] = display_df['P&L (Custom)'].apply(format_currency)
         
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        # Apply color styling
+        def color_numeric(val):
+            """Color code numeric values"""
+            if 'Rp' in str(val) or '%' in str(val):
+                num_str = str(val).replace('Rp', '').replace('%', '').replace(',', '').replace(' ', '')
+                try:
+                    num = float(num_str)
+                    if num > 0:
+                        return 'background-color: #d4edda; color: #155724; font-weight: 600'
+                    elif num < 0:
+                        return 'background-color: #f8d7da; color: #721c24; font-weight: 600'
+                except:
+                    pass
+            return ''
+        
+        styled_df = display_df.style.applymap(
+            color_numeric, 
+            subset=['Change %', 'P&L', 'Change % (Custom)', 'P&L (Custom)']
+        )
+        
+        st.dataframe(styled_df, use_container_width=True, hide_index=True, height=500)
         
         # Download button
-        csv = filtered_df.to_csv(index=False)
-        st.download_button(
-            label="📥 Download as CSV",
-            data=csv,
-            file_name=f"idx_trades_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col2:
+            csv = filtered_df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"idx_trades_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
 
 if __name__ == "__main__":
     main()
