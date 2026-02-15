@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from datetime import date, datetime
 import numpy as np
 from google.oauth2.service_account import Credentials
+import time
 
 # =========================================================================
 # MULTI-THEME SELECTOR 
@@ -108,6 +109,9 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.divider()
+    
+    # Quick Stats in Sidebar
+    st.markdown("### 📌 Quick Stats")
 
 # Ambil theme yang aktif
 theme = theme_options[st.session_state.theme]
@@ -116,10 +120,10 @@ theme = theme_options[st.session_state.theme]
 # KONFIGURASI HALAMAN
 # -----------------------------------------------------------------
 st.set_page_config(
-    page_title="AlphaStock Trade Journal", 
+    page_title="IDX Trade Journal", 
     page_icon="📈", 
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # -----------------------------------------------------------------
@@ -277,8 +281,9 @@ st.markdown(f"""
         color: {theme['text']} !important;
     }}
     
-    .stTextInput label, .stSelectbox label, .stDateInput label {{
+    .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{
         color: {theme['text_secondary']} !important;
+        font-size: 0.85rem !important;
     }}
     
     hr {{
@@ -304,6 +309,19 @@ st.markdown(f"""
         border-radius: 10px;
     }}
     
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {{
+        background: {theme['bg']};
+    }}
+    
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] label {{
+        color: {theme['text']} !important;
+    }}
+    
     @media (max-width: 768px) {{
         .premium-header {{
             flex-direction: column;
@@ -323,20 +341,27 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------
-# HEADER
+# HEADER WITH REFRESH BUTTON
 # -----------------------------------------------------------------
-st.markdown(f"""
-    <div class="premium-header">
-        <div class="header-title">📈 AlphaStock <span>| Trade Journal</span></div>
-        <div class="header-date">
-            <span>📅 {datetime.now().strftime('%d %B %Y')}</span>
-            <span style="margin-left: 1rem;">⏰ {datetime.now().strftime('%H:%M')}</span>
+col1, col2 = st.columns([5, 1])
+with col1:
+    st.markdown(f"""
+        <div class="premium-header">
+            <div class="header-title">📈 IDX Trade <span>| Backtesting Journal</span></div>
+            <div class="header-date">
+                <span>📅 {datetime.now().strftime('%d %B %Y')}</span>
+                <span style="margin-left: 1rem;">⏰ {datetime.now().strftime('%H:%M')}</span>
+            </div>
         </div>
-    </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+with col2:
+    st.write("")
+    if st.button("🔄 Refresh", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
 
 # =========================================================================
-# KONEKSI GOOGLE SHEETS DENGAN ID SPESIFIK 
+# KONEKSI GOOGLE SHEETS
 # =========================================================================
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -349,9 +374,6 @@ COLUMNS = [
     "Possition", "Change %", "P&L", "Change % (Custom)", "P&L (Custom)"
 ]
 
-# ID Spreadsheet Spesifik Milik Bapak
-SPREADSHEET_ID = "1l808C4D-jUCxZTjLsbs4QrjLrwzLeTVtQ5cT1hzrzuk"
-
 @st.cache_resource(ttl=300)
 def get_gsheet_client():
     try:
@@ -359,7 +381,6 @@ def get_gsheet_client():
             st.error("❌ Gagal: secrets 'gcp_service_account' tidak ditemukan!")
             return None
         
-        # Dictionary murni agar tidak kena auth error
         creds_dict = dict(st.secrets["gcp_service_account"])
         creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         client = gspread.authorize(creds)
@@ -371,10 +392,9 @@ def get_gsheet_client():
 def get_worksheet(_client):
     if _client:
         try:
-            # Gunakan ID untuk memastikan langsung menembak ke file yang benar
-            return _client.open_by_key(SPREADSHEET_ID).worksheet("IDX")
+            return _client.open_by_key(st.secrets["spreadsheet_id"]).sheet1
         except Exception as e:
-            st.error(f"🔴 Gagal mengambil Worksheet. Pastikan Service Account sudah jadi Editor! Error: {str(e)}")
+            st.error(f"🔴 Gagal mengambil Worksheet: {str(e)}")
     return None
 
 @st.cache_data(ttl=30)
@@ -383,9 +403,8 @@ def load_data(_client):
         if _client is None:
             return pd.DataFrame(columns=COLUMNS)
             
-        # Gunakan ID untuk memastikan langsung menembak ke file yang benar
-        spreadsheet = _client.open_by_key(SPREADSHEET_ID)
-        ws = spreadsheet.worksheet("IDX")
+        spreadsheet = _client.open_by_key(st.secrets["spreadsheet_id"])
+        ws = spreadsheet.sheet1
         
         data = ws.get_all_values()
         if len(data) <= 1:
@@ -398,8 +417,8 @@ def load_data(_client):
             if pd.isna(x) or x == '':
                 return 0.0
             if isinstance(x, str):
-                x = x.replace('Rp', '').replace(',', '').replace('%', '').strip()
-                if x in ['#N/A', '#ERROR!', 'No Data', '-']:
+                x = x.replace('Rp', '').replace(',', '').replace('%', '').replace('.', '').strip()
+                if x in ['#N/A', '#ERROR!', 'No Data', '-', '']:
                     return 0.0
             try:
                 return float(x)
@@ -441,10 +460,21 @@ def format_rupiah(angka):
     except:
         return "Rp 0"
 
+# Update sidebar quick stats
+with st.sidebar:
+    if not df.empty:
+        open_positions = len(df[df['Possition'].str.contains('Open|Floating', case=False, na=False)])
+        closed_positions = len(df[~df['Possition'].str.contains('Open|Floating', case=False, na=False)])
+        st.metric("🔓 Open Positions", open_positions)
+        st.metric("🔒 Closed Positions", closed_positions)
+        st.metric("📊 Total Trades", len(df))
+    else:
+        st.info("No trades yet")
+
 # =========================================================================
 # TABS
 # =========================================================================
-tabs = st.tabs(["📊 DASHBOARD", "➕ ENTRY", "✏️ UPDATE", "📈 ANALYTICS", "🗑️ DELETE"])
+tabs = st.tabs(["📊 DASHBOARD", "➕ ADD TRADE", "✏️ UPDATE", "📈 ANALYTICS", "🗑️ DELETE", "📋 ALL TRADES"])
 
 # ==========================================
 # DASHBOARD
@@ -471,28 +501,86 @@ with tabs[0]:
         
         st.divider()
         
-        st.subheader("📋 TRANSACTION HISTORY")
+        # Charts side by side
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 📊 Top 10 P&L")
+            if not df_open.empty:
+                chart_df = df_open.nlargest(10, 'P&L') if len(df_open) > 10 else df_open
+                colors = [theme['positive'] if x > 0 else theme['negative'] for x in chart_df['P&L']]
+                
+                fig = go.Figure()
+                fig.add_trace(go.Bar(
+                    x=chart_df['Stock Code'],
+                    y=chart_df['P&L'],
+                    marker_color=colors,
+                    text=chart_df['P&L'].apply(lambda x: format_rupiah(x)),
+                    textposition='outside',
+                    textfont=dict(size=10, color=theme['text'])
+                ))
+                
+                fig.update_layout(
+                    template="plotly_dark",
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color=theme['text']),
+                    height=300,
+                    margin=dict(l=20, r=20, t=10, b=20),
+                    showlegend=False,
+                    xaxis_title="",
+                    yaxis_title=""
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            st.markdown("### 🥧 Position Status")
+            position_open = len(df[df['Possition'].str.contains('Open|Floating', case=False, na=False)])
+            position_closed = len(df) - position_open
+            
+            if position_open + position_closed > 0:
+                fig = go.Figure(data=[go.Pie(
+                    labels=['OPEN', 'CLOSED'],
+                    values=[position_open, position_closed],
+                    marker_colors=[theme['accent'], theme['text_secondary']],
+                    textinfo='label+percent',
+                    textfont=dict(size=12, color=theme['text']),
+                    hole=0.4
+                )])
+                
+                fig.update_layout(
+                    template="plotly_dark",
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color=theme['text']),
+                    height=300,
+                    margin=dict(l=20, r=20, t=10, b=20)
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        
+        st.divider()
+        st.subheader("📋 RECENT TRADES")
         
         display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Value (Buy)', 
                         'Possition', 'Current Price', 'Change %', 'P&L']
-        df_display = df[display_cols].copy()
+        df_display = df.head(10)[display_cols].copy()
         
         df_display['Buy Date'] = df_display['Buy Date'].apply(lambda x: x.strftime('%d/%m/%y') if pd.notna(x) else '-')
-        df_display['Price (Buy)'] = df_display['Price (Buy)'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
-        df_display['Value (Buy)'] = df_display['Value (Buy)'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
-        df_display['Current Price'] = df_display['Current Price'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
-        df_display['P&L'] = df_display['P&L'].apply(lambda x: f"Rp {x:,.0f}".replace(',', '.'))
+        df_display['Price (Buy)'] = df_display['Price (Buy)'].apply(format_rupiah)
+        df_display['Value (Buy)'] = df_display['Value (Buy)'].apply(format_rupiah)
+        df_display['Current Price'] = df_display['Current Price'].apply(format_rupiah)
+        df_display['P&L'] = df_display['P&L'].apply(format_rupiah)
         df_display['Change %'] = df_display['Change %'].apply(lambda x: f"{x:.1f}%")
         
         df_display = df_display.rename(columns={
             "Buy Date": "📅 DATE",
             "Stock Code": "📊 STOCK",
             "Qty Lot": "🔢 LOT",
-            "Price (Buy)": "💰 BUY PRICE",
+            "Price (Buy)": "💰 BUY",
             "Value (Buy)": "💵 VALUE",
             "Possition": "📍 POS",
             "Current Price": "💹 CURRENT",
-            "Change %": "📈 CHANGE",
+            "Change %": "📈 %",
             "P&L": "💲 P&L"
         })
 
@@ -506,68 +594,78 @@ with tabs[0]:
         col1, col2, col3 = st.columns(3)
         with col1:
             total_pnl = df['P&L'].sum()
-            st.info(f"💰 Total Realized P&L: {format_rupiah(total_pnl)}")
+            st.info(f"💰 Total P&L: {format_rupiah(total_pnl)}")
         with col2:
             win_trades = (df['P&L'] > 0).sum()
-            st.info(f"✅ Winning Trades: **{win_trades}**")
+            st.info(f"✅ Winning: **{win_trades}**")
         with col3:
             loss_trades = (df['P&L'] < 0).sum()
-            st.info(f"❌ Losing Trades: **{loss_trades}**")
+            st.info(f"❌ Losing: **{loss_trades}**")
             
     else:
-        st.info("✨ Belum ada transaksi. Mulai dengan tab ENTRY")
+        st.info("✨ Belum ada transaksi. Mulai dengan tab ADD TRADE")
 
 # ==========================================
-# ENTRY - CREATE
+# ADD TRADE
 # ==========================================
 with tabs[1]:
-    st.subheader("➕ ADD NEW TRANSACTION")
+    st.subheader("➕ ADD NEW TRADE")
     
     with st.form("entry_form", clear_on_submit=True):
-        cols = st.columns([1.2, 1, 0.8, 1.2, 1])
+        cols = st.columns(2)
         
         with cols[0]:
             buy_date = st.date_input("📅 BUY DATE", date.today())
-        with cols[1]:
-            stock_code = st.text_input("📊 STOCK CODE", "", placeholder="BBCA").upper()
-        with cols[2]:
-            qty_lot = st.number_input("🔢 LOT", 1, step=1)
-        with cols[3]:
-            price_buy = st.number_input("💰 BUY PRICE", 1, step=10)
-        with cols[4]:
-            position = st.selectbox("📍 POSITION", ["Open/Floating", "Closed"])
+            qty_lot = st.number_input("🔢 QTY LOT", 1, step=1)
         
-        submitted = st.form_submit_button("➕ ADD TRANSACTION", use_container_width=True)
+        with cols[1]:
+            stock_code = st.text_input("📊 STOCK CODE", "", placeholder="e.g. BBCA, BMRI").upper()
+            price_buy = st.number_input("💰 BUY PRICE", 1, step=50)
+        
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col2:
+            submitted = st.form_submit_button("➕ ADD TRADE", use_container_width=True)
         
         if submitted:
             if not stock_code:
                 st.error("❌ Stock code wajib diisi!")
             else:
                 try:
+                    # Find next empty row
+                    all_values = worksheet.get_all_values()
+                    next_row = 2
+                    for i, row in enumerate(all_values[1:], start=2):
+                        if not row[0]:
+                            next_row = i
+                            break
+                    else:
+                        next_row = len(all_values) + 1
+                    
                     new_row = [
                         buy_date.strftime("%Y-%m-%d"),
                         stock_code,
                         qty_lot,
                         price_buy,
                         "", "", "", "", "",
-                        position,
+                        "OPEN",
                         "", "", "", ""
                     ]
                     
-                    with st.spinner("Menyimpan ke Google Sheets..."):
-                        worksheet.append_row(new_row, value_input_option='USER_ENTERED')
+                    with st.spinner("Saving to Google Sheets..."):
+                        worksheet.insert_row(new_row, next_row, value_input_option='USER_ENTERED')
                         st.cache_data.clear()
-                        st.success(f"✅ {stock_code} berhasil ditambahkan ke GSheets!")
+                        st.success(f"✅ {stock_code} berhasil ditambahkan!")
                         st.balloons()
+                        time.sleep(1)
                         st.rerun()
                 except Exception as e:
-                    st.error(f"❌ Error saat menyimpan: {str(e)}")
+                    st.error(f"❌ Error: {str(e)}")
 
 # ==========================================
 # UPDATE
 # ==========================================
 with tabs[2]:
-    st.subheader("✏️ UPDATE TRANSACTION")
+    st.subheader("✏️ UPDATE TRADE")
     
     if not df.empty:
         options = [
@@ -583,44 +681,48 @@ with tabs[2]:
                 row = df.iloc[idx]
                 gsheet_row = idx + 2
                 
-                st.info(f"**Mengedit:** {row['Stock Code']} - Beli: {format_rupiah(row['Price (Buy)'])}")
+                st.info(f"**Editing:** {row['Stock Code']} - Buy: {format_rupiah(row['Price (Buy)'])}")
                 
                 col1, col2 = st.columns(2)
                 
                 with col1:
+                    current_pos = row['Possition']
+                    if 'Open' in str(current_pos) or 'Floating' in str(current_pos):
+                        pos_index = 0
+                    else:
+                        pos_index = 1
+                    
                     new_position = st.selectbox(
                         "📍 Update Position",
-                        ["Open/Floating", "Closed"],
-                        index=0 if 'Open' in str(row['Possition']) else 1
+                        ["OPEN", "CLOSE"],
+                        index=pos_index
                     )
                 
                 with col2:
                     default_date = row['Custom Date'] if pd.notna(row['Custom Date']) else date.today()
-                    custom_date = st.date_input("📅 Custom Date (Skenario)", default_date)
+                    custom_date = st.date_input("📅 Custom Date (Scenario)", default_date)
                 
-                if st.button("🔄 UPDATE", use_container_width=True):
-                    try:
-                        with st.spinner("Updating Google Sheets..."):
-                            worksheet.update(
-                                f'J{gsheet_row}', 
-                                [[new_position]], 
-                                value_input_option='USER_ENTERED'
-                            )
-                            worksheet.update(
-                                f'H{gsheet_row}', 
-                                [[custom_date.strftime("%Y-%m-%d")]], 
-                                value_input_option='USER_ENTERED'
-                            )
-                            
-                            st.cache_data.clear()
-                            st.success("✅ Data berhasil diupdate di GSheets!")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error update: {str(e)}")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("🔄 UPDATE", use_container_width=True):
+                        try:
+                            with st.spinner("Updating..."):
+                                worksheet.update(f'J{gsheet_row}', [[new_position]], value_input_option='USER_ENTERED')
+                                worksheet.update(f'H{gsheet_row}', [[custom_date.strftime("%Y-%m-%d")]], value_input_option='USER_ENTERED')
+                                
+                                st.cache_data.clear()
+                                st.success("✅ Updated successfully!")
+                                time.sleep(1)
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error: {str(e)}")
+                with col2:
+                    if st.button("❌ CANCEL", use_container_width=True):
+                        st.rerun()
         else:
-            st.info("Tidak ada transaksi untuk diupdate")
+            st.info("No transactions to update")
     else:
-        st.info("Belum ada transaksi untuk diupdate")
+        st.info("No transactions yet")
 
 # ==========================================
 # ANALYTICS
@@ -629,12 +731,13 @@ with tabs[3]:
     st.subheader("📈 ANALYTICS DASHBOARD")
     
     if not df.empty:
-        df_open = df[df['Possition'].str.contains('Open', case=False, na=False)]
+        df_open = df[df['Possition'].str.contains('Open|Floating', case=False, na=False)]
         
         if not df_open.empty:
             col1, col2 = st.columns(2)
             
             with col1:
+                st.markdown("### 📊 P&L Distribution")
                 fig = go.Figure()
                 colors = [theme['positive'] if x > 0 else theme['negative'] for x in df_open['P&L']]
                 
@@ -642,24 +745,24 @@ with tabs[3]:
                     x=df_open['Stock Code'],
                     y=df_open['P&L'],
                     marker_color=colors,
-                    text=df_open['P&L'].apply(lambda x: f'Rp {x:,.0f}'),
+                    text=df_open['P&L'].apply(lambda x: format_rupiah(x)),
                     textposition='outside',
                     textfont=dict(size=10, color=theme['text'])
                 ))
                 
                 fig.update_layout(
-                    title="📊 P&L per Saham",
                     template="plotly_dark",
                     plot_bgcolor='rgba(0,0,0,0)',
                     paper_bgcolor='rgba(0,0,0,0)',
                     font=dict(color=theme['text']),
-                    height=300,
-                    margin=dict(l=20, r=20, t=40, b=20),
+                    height=350,
+                    margin=dict(l=20, r=20, t=20, b=20),
                     showlegend=False
                 )
                 st.plotly_chart(fig, use_container_width=True)
             
             with col2:
+                st.markdown("### 🎯 Win/Loss Ratio")
                 wins = (df_open['P&L'] > 0).sum()
                 losses = (df_open['P&L'] < 0).sum()
                 
@@ -674,13 +777,12 @@ with tabs[3]:
                     )])
                     
                     fig.update_layout(
-                        title="🎯 Win/Loss Ratio",
                         template="plotly_dark",
                         plot_bgcolor='rgba(0,0,0,0)',
                         paper_bgcolor='rgba(0,0,0,0)',
                         font=dict(color=theme['text']),
-                        height=300,
-                        margin=dict(l=20, r=20, t=40, b=20)
+                        height=350,
+                        margin=dict(l=20, r=20, t=20, b=20)
                     )
                     st.plotly_chart(fig, use_container_width=True)
             
@@ -701,15 +803,15 @@ with tabs[3]:
                 max_gain = df_open['P&L'].max()
                 st.metric("🔺 Max Gain", format_rupiah(max_gain))
         else:
-            st.info("Tidak ada posisi open untuk analitik")
+            st.info("No open positions for analytics")
     else:
-        st.info("Tambah transaksi untuk melihat analitik")
+        st.info("Add trades to see analytics")
 
 # ==========================================
 # DELETE
 # ==========================================
 with tabs[4]:
-    st.subheader("🗑️ DELETE TRANSACTION")
+    st.subheader("🗑️ DELETE TRADE")
     
     if not df.empty:
         options = [
@@ -718,7 +820,7 @@ with tabs[4]:
         ]
         
         if options:
-            to_delete = st.selectbox("Pilih transaksi untuk dihapus:", options)
+            to_delete = st.selectbox("Select trade to delete:", options)
             
             if to_delete:
                 idx = options.index(to_delete)
@@ -729,22 +831,118 @@ with tabs[4]:
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("🗑️ KONFIRMASI DELETE", use_container_width=True):
+                    if st.button("🗑️ CONFIRM DELETE", use_container_width=True):
                         try:
-                            with st.spinner("Menghapus dari Google Sheets..."):
+                            with st.spinner("Deleting..."):
                                 worksheet.delete_rows(gsheet_row)
                                 st.cache_data.clear()
-                                st.success("✅ Transaksi dihapus secara permanen!")
+                                st.success("✅ Deleted!")
+                                time.sleep(1)
                                 st.rerun()
                         except Exception as e:
-                            st.error(f"❌ Error delete: {str(e)}")
+                            st.error(f"❌ Error: {str(e)}")
                 with col2:
-                    if st.button("BATAL", use_container_width=True):
+                    if st.button("❌ CANCEL", use_container_width=True):
                         st.rerun()
         else:
-            st.info("Tidak ada transaksi untuk dihapus")
+            st.info("No trades to delete")
     else:
-        st.info("Belum ada transaksi untuk dihapus")
+        st.info("No trades yet")
+
+# ==========================================
+# ALL TRADES
+# ==========================================
+with tabs[5]:
+    st.subheader("📋 ALL TRADES")
+    
+    if not df.empty:
+        # Filters
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            position_filter = st.multiselect(
+                "Position",
+                options=['OPEN', 'CLOSE'],
+                default=['OPEN', 'CLOSE']
+            )
+        
+        with col2:
+            stock_filter = st.multiselect(
+                "Stock",
+                options=df['Stock Code'].unique().tolist()
+            )
+        
+        with col3:
+            sort_by = st.selectbox(
+                "Sort by",
+                ['Buy Date', 'P&L', 'Change %', 'Stock Code']
+            )
+        
+        with col4:
+            st.write("")
+            st.write("")
+            if st.button("🔄 Refresh", use_container_width=True, key="refresh_all"):
+                st.cache_data.clear()
+                st.rerun()
+        
+        # Apply filters
+        filtered_df = df.copy()
+        
+        if position_filter:
+            filtered_df = filtered_df[filtered_df['Possition'].isin(position_filter)]
+        
+        if stock_filter:
+            filtered_df = filtered_df[filtered_df['Stock Code'].isin(stock_filter)]
+        
+        # Sort
+        filtered_df = filtered_df.sort_values(by=sort_by, ascending=False)
+        
+        st.markdown(f"**Showing {len(filtered_df)} trades**")
+        
+        # Display
+        display_cols = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Value (Buy)', 
+                        'Possition', 'Current Price', 'Change %', 'P&L']
+        df_display = filtered_df[display_cols].copy()
+        
+        df_display['Buy Date'] = df_display['Buy Date'].apply(lambda x: x.strftime('%d/%m/%y') if pd.notna(x) else '-')
+        df_display['Price (Buy)'] = df_display['Price (Buy)'].apply(format_rupiah)
+        df_display['Value (Buy)'] = df_display['Value (Buy)'].apply(format_rupiah)
+        df_display['Current Price'] = df_display['Current Price'].apply(format_rupiah)
+        df_display['P&L'] = df_display['P&L'].apply(format_rupiah)
+        df_display['Change %'] = df_display['Change %'].apply(lambda x: f"{x:.1f}%")
+        
+        df_display = df_display.rename(columns={
+            "Buy Date": "📅 DATE",
+            "Stock Code": "📊 STOCK",
+            "Qty Lot": "🔢 LOT",
+            "Price (Buy)": "💰 BUY",
+            "Value (Buy)": "💵 VALUE",
+            "Possition": "📍 POS",
+            "Current Price": "💹 CURRENT",
+            "Change %": "📈 %",
+            "P&L": "💲 P&L"
+        })
+
+        st.dataframe(
+            df_display,
+            use_container_width=True,
+            hide_index=True,
+            height=500
+        )
+        
+        # Download button
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col2:
+            csv = filtered_df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"idx_trades_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+    else:
+        st.info("No trades yet")
 
 # -----------------------------------------------------------------
 # FOOTER
@@ -752,8 +950,8 @@ with tabs[4]:
 st.divider()
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.caption(f"📊 Total Transaksi: {len(df) if not df.empty else 0}")
+    st.caption(f"📊 Total Trades: {len(df) if not df.empty else 0}")
 with col2:
-    st.caption(f"📈 Total Saham: {df['Stock Code'].nunique() if not df.empty else 0}")
+    st.caption(f"📈 Total Stocks: {df['Stock Code'].nunique() if not df.empty else 0}")
 with col3:
     st.caption(f"⚡ Last Update: {datetime.now().strftime('%H:%M:%S')}")
