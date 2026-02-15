@@ -704,7 +704,7 @@ with tabs[2]:
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("🔄 UPDATE", use_container_width=True):
+                    if st.button("🔄 UPDATE", use_container_width=True, key="update_btn"):
                         try:
                             with st.spinner("Updating..."):
                                 worksheet.update(f'J{gsheet_row}', [[new_position]], value_input_option='USER_ENTERED')
@@ -717,7 +717,7 @@ with tabs[2]:
                         except Exception as e:
                             st.error(f"❌ Error: {str(e)}")
                 with col2:
-                    if st.button("❌ CANCEL", use_container_width=True):
+                    if st.button("❌ CANCEL", use_container_width=True, key="cancel_update_btn"):
                         st.rerun()
         else:
             st.info("No transactions to update")
@@ -831,7 +831,7 @@ with tabs[4]:
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("🗑️ CONFIRM DELETE", use_container_width=True):
+                    if st.button("🗑️ CONFIRM DELETE", use_container_width=True, key="delete_btn"):
                         try:
                             with st.spinner("Deleting..."):
                                 worksheet.delete_rows(gsheet_row)
@@ -842,7 +842,7 @@ with tabs[4]:
                         except Exception as e:
                             st.error(f"❌ Error: {str(e)}")
                 with col2:
-                    if st.button("❌ CANCEL", use_container_width=True):
+                    if st.button("❌ CANCEL", use_container_width=True, key="cancel_delete_btn"):
                         st.rerun()
         else:
             st.info("No trades to delete")
