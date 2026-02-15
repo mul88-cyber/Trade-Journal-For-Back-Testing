@@ -136,7 +136,7 @@ st.markdown(f"""
     }}
     
     .block-container {{
-        padding-top: 1rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 1rem !important;
         max-width: 1400px !important;
         margin: 0 auto !important;
@@ -147,7 +147,7 @@ st.markdown(f"""
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 30px;
-        padding: 0.8rem 2rem;
+        padding: 1rem 2rem;
         margin-bottom: 1.5rem;
         display: flex;
         justify-content: space-between;
@@ -156,9 +156,10 @@ st.markdown(f"""
     }}
     
     .header-title {{
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         font-weight: 700;
         color: {theme['text']};
+        line-height: 1.2;
     }}
     
     .header-title span {{
@@ -168,7 +169,7 @@ st.markdown(f"""
     
     .header-date {{
         color: {theme['text_secondary']};
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         background: rgba(255,255,255,0.03);
         padding: 0.5rem 1rem;
         border-radius: 20px;
@@ -256,7 +257,7 @@ st.markdown(f"""
         color: white;
         border: none;
         border-radius: 30px !important;
-        padding: 0.4rem 1.5rem !important;
+        padding: 0.5rem 1.5rem !important;
         font-weight: 500;
         transition: all 0.3s ease;
     }}
@@ -283,7 +284,43 @@ st.markdown(f"""
     
     .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{
         color: {theme['text_secondary']} !important;
-        font-size: 0.85rem !important;
+        font-size: 0.8rem !important;
+        margin-bottom: 0.3rem !important;
+    }}
+    
+    /* Calculation Card */
+    .calc-card {{
+        background: {theme['card_bg']};
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 20px;
+        padding: 1rem;
+        margin-top: 1rem;
+        border-left: 4px solid {theme['accent']};
+    }}
+    
+    .calc-item {{
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        color: {theme['text_secondary']};
+        font-size: 0.9rem;
+    }}
+    
+    .calc-value {{
+        color: {theme['text']};
+        font-weight: 600;
+    }}
+    
+    .calc-total {{
+        display: flex;
+        justify-content: space-between;
+        padding: 0.7rem 0;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        margin-top: 0.5rem;
+        color: {theme['accent']};
+        font-weight: 700;
+        font-size: 1.1rem;
     }}
     
     hr {{
@@ -327,6 +364,10 @@ st.markdown(f"""
             flex-direction: column;
             align-items: flex-start;
             gap: 0.5rem;
+        }}
+        
+        .header-title {{
+            font-size: 1.3rem;
         }}
         
         div[data-testid="metric-container"] div {{
@@ -606,22 +647,55 @@ with tabs[0]:
         st.info("✨ Belum ada transaksi. Mulai dengan tab ADD TRADE")
 
 # ==========================================
-# ADD TRADE
+# ADD TRADE - WITH CALCULATION
 # ==========================================
 with tabs[1]:
     st.subheader("➕ ADD NEW TRADE")
     
     with st.form("entry_form", clear_on_submit=True):
-        cols = st.columns(2)
+        # Horizontal layout - all in one row
+        cols = st.columns([1.2, 1.5, 0.8, 1.2])
         
         with cols[0]:
             buy_date = st.date_input("📅 BUY DATE", date.today())
-            qty_lot = st.number_input("🔢 QTY LOT", 1, step=1)
         
         with cols[1]:
             stock_code = st.text_input("📊 STOCK CODE", "", placeholder="e.g. BBCA, BMRI").upper()
-            price_buy = st.number_input("💰 BUY PRICE", 1, step=50)
         
+        with cols[2]:
+            qty_lot = st.number_input("🔢 QTY LOT", min_value=1, value=1, step=1)
+        
+        with cols[3]:
+            price_buy = st.number_input("💰 BUY PRICE", min_value=0, value=0, step=50)
+        
+        # Real-time calculation
+        if qty_lot > 0 and price_buy > 0:
+            value_buy = qty_lot * 100 * price_buy  # 1 lot = 100 shares
+            fee = value_buy * 0.0025  # 0.25% buy fee
+            total_needed = value_buy + fee
+            
+            st.markdown(f"""
+            <div class="calc-card">
+                <div class="calc-item">
+                    <span>📦 Shares (Qty × 100):</span>
+                    <span class="calc-value">{qty_lot * 100:,} shares</span>
+                </div>
+                <div class="calc-item">
+                    <span>💵 Value (Shares × Price):</span>
+                    <span class="calc-value">{format_rupiah(value_buy)}</span>
+                </div>
+                <div class="calc-item">
+                    <span>💳 Buy Fee (0.25%):</span>
+                    <span class="calc-value">{format_rupiah(fee)}</span>
+                </div>
+                <div class="calc-total">
+                    <span>💰 TOTAL NEEDED:</span>
+                    <span>{format_rupiah(total_needed)}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Submit button centered
         col1, col2, col3 = st.columns([2, 1, 2])
         with col2:
             submitted = st.form_submit_button("➕ ADD TRADE", use_container_width=True)
@@ -629,18 +703,23 @@ with tabs[1]:
         if submitted:
             if not stock_code:
                 st.error("❌ Stock code wajib diisi!")
+            elif price_buy <= 0:
+                st.error("❌ Buy price harus lebih dari 0!")
             else:
                 try:
-                    # Find next empty row
+                    # Get all data to find next empty row
                     all_values = worksheet.get_all_values()
-                    next_row = 2
-                    for i, row in enumerate(all_values[1:], start=2):
-                        if not row[0]:
+                    
+                    # Find first empty row starting from row 3
+                    next_row = 3
+                    for i, row in enumerate(all_values[2:], start=3):
+                        if not row or not row[0] or row[0].strip() == '':
                             next_row = i
                             break
                     else:
                         next_row = len(all_values) + 1
                     
+                    # Prepare new row data
                     new_row = [
                         buy_date.strftime("%Y-%m-%d"),
                         stock_code,
@@ -652,7 +731,12 @@ with tabs[1]:
                     ]
                     
                     with st.spinner("Saving to Google Sheets..."):
-                        worksheet.insert_row(new_row, next_row, value_input_option='USER_ENTERED')
+                        # Update cell by cell to avoid deleting formulas
+                        for col_idx, value in enumerate(new_row, start=1):
+                            if value != "":
+                                col_letter = chr(64 + col_idx)
+                                worksheet.update(f'{col_letter}{next_row}', [[value]], value_input_option='USER_ENTERED')
+                        
                         st.cache_data.clear()
                         st.success(f"✅ {stock_code} berhasil ditambahkan!")
                         st.balloons()
@@ -679,7 +763,7 @@ with tabs[2]:
             if selected:
                 idx = options.index(selected)
                 row = df.iloc[idx]
-                gsheet_row = idx + 2
+                gsheet_row = idx + 3  # +3 because: +1 for header, +1 for formula row, +1 for 0-indexing
                 
                 st.info(f"**Editing:** {row['Stock Code']} - Buy: {format_rupiah(row['Price (Buy)'])}")
                 
@@ -825,7 +909,7 @@ with tabs[4]:
             if to_delete:
                 idx = options.index(to_delete)
                 row = df.iloc[idx]
-                gsheet_row = idx + 2
+                gsheet_row = idx + 3  # +3 because: +1 for header, +1 for formula row, +1 for 0-indexing
                 
                 st.warning(f"⚠️ PERMANENT DELETE: **{row['Stock Code']}**")
                 
