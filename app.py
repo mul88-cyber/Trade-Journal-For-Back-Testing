@@ -227,8 +227,56 @@ def load_data(_client):
     """Load data from Google Sheets with caching"""
     try:
         sheet = _client.open_by_key(st.secrets["spreadsheet_id"]).sheet1
-        data = sheet.get_all_records()
-        df = pd.DataFrame(data)
+        
+        # Get all data
+        all_data = sheet.get_all_values()
+        
+        # Check if sheet has data
+        if not all_data:
+            st.warning("⚠️ Google Sheet is empty. Please add headers first.")
+            return pd.DataFrame()
+        
+        # Check if header row exists
+        if len(all_data) < 1:
+            st.warning("⚠️ No header row found in Google Sheet.")
+            return pd.DataFrame()
+        
+        # Get headers
+        headers = all_data[0]
+        
+        # Expected headers
+        expected_headers = ['Buy Date', 'Stock Code', 'Qty Lot', 'Price (Buy)', 'Value (Buy)', 
+                          'Current Date', 'Current Price', 'Custom Date', 'Custom Price', 
+                          'Possition', 'Change %', 'P&L', 'Change % (Custom)', 'P&L (Custom)']
+        
+        # Check if we have enough columns
+        if len(headers) < len(expected_headers):
+            st.error(f"⚠️ Google Sheet hanya punya {len(headers)} kolom. Seharusnya {len(expected_headers)} kolom.")
+            st.error(f"Headers yang ada: {headers}")
+            st.error(f"Headers yang dibutuhkan: {expected_headers}")
+            return pd.DataFrame()
+        
+        # Get data rows (skip header)
+        data_rows = all_data[1:]
+        
+        # Filter out empty rows (where Buy Date is empty)
+        data_rows = [row for row in data_rows if row and len(row) > 0 and row[0].strip()]
+        
+        # If no data rows, return empty DataFrame with headers
+        if not data_rows:
+            return pd.DataFrame(columns=expected_headers)
+        
+        # Ensure all rows have the same number of columns
+        normalized_rows = []
+        for row in data_rows:
+            # Pad row with empty strings if it's too short
+            while len(row) < len(expected_headers):
+                row.append('')
+            # Trim row if it's too long
+            normalized_rows.append(row[:len(expected_headers)])
+        
+        # Create DataFrame
+        df = pd.DataFrame(normalized_rows, columns=expected_headers)
         
         # Convert date columns
         date_columns = ['Buy Date', 'Current Date', 'Custom Date']
@@ -244,8 +292,22 @@ def load_data(_client):
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         
         return df
+        
+    except gspread.exceptions.SpreadsheetNotFound:
+        st.error("❌ Google Sheet tidak ditemukan!")
+        st.error("Pastikan:")
+        st.error("1. Spreadsheet ID benar")
+        st.error("2. Sheet sudah di-share dengan service account")
+        return pd.DataFrame()
+    
+    except gspread.exceptions.APIError as e:
+        st.error(f"❌ Google API Error: {e}")
+        st.error("Pastikan Google Sheets API & Drive API sudah di-enable")
+        return pd.DataFrame()
+    
     except Exception as e:
-        st.error(f"Error loading data: {e}")
+        st.error(f"❌ Error loading data: {e}")
+        st.error("Cek struktur Google Sheet kamu. Pastikan Row 1 ada header yang lengkap.")
         return pd.DataFrame()
 
 def add_trade(client, buy_date, stock_code, qty_lot, price_buy):
