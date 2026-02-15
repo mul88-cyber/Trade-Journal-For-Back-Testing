@@ -592,7 +592,7 @@ def main():
     
     # Delete Trade Tab
     with tab4:
-        st.markdown("## Delete Trade"))
+        st.markdown("## Delete Trade")
         
         if df.empty:
             st.info("📝 No trades to delete.")
@@ -635,7 +635,7 @@ def main():
     
     # All Trades Tab
     with tab5:
-        st.markdown("## All Trades"))
+        st.markdown("## All Trades")
         
         if df.empty:
             st.info("📝 No trades found.")
